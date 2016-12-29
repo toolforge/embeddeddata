@@ -47,7 +47,6 @@ def run_worker():
 
         while True:
             _, title = redis.blpop(REDIS_KEY)
-            pywikibot.output('Received: %s' % title)
             filepage = pywikibot.FilePage(site, title.decode('utf-8'))
 
             if not filepage.exists():
@@ -56,6 +55,8 @@ def run_worker():
             if pywikibot.User(site, filepage.latest_file_info.user).editCount(
                     force=True) > 200:
                 continue
+
+            pywikibot.output('Working on: %s' % title)
 
             path = os.path.join(tmpdir, str(uuid.uuid1()))
 
