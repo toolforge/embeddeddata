@@ -15,6 +15,8 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+import traceback
+
 from PIL import Image
 from PIL import ImageFile
 
@@ -51,6 +53,7 @@ def detect(f):
         image.tobytes()
         image._getexif()
     except Exception:
+        traceback.print_exc()
         return
 
     return f._maxseek, True
