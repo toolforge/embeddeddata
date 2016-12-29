@@ -59,8 +59,6 @@ def detect(f):
     elif pos == size:
         return
 
-    pos, posexact = detection
-
     # Split and analyse
     chunk_size = 1 << 20
 
