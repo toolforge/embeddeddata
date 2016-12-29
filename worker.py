@@ -48,8 +48,12 @@ def run_worker():
         while True:
             title = redis.blpop(REDIS_KEY)
             filepage = pywikibot.FilePage(site, title)
-            pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
-                             % filepage.title(asLink=True))
+
+            if not filepage.exists():
+                continue
+
+            if filepage.getLatestUploader().editCount(force=True) > 200:
+                continue
 
             path = os.path.join(tmpdir, uuid.uuid1())
 
@@ -74,7 +78,7 @@ def run_worker():
                     # for now: add a {{speedy}}
                     filepage.text = ('{{speedy|1=%s}}\n' % msg) + filepage.text
                     filepage.save('Bot: Adding {{[[Template:speedy|speedy]]}} '
-                                  'to this embeded data suspect.')
+                                  'to this embedded data suspect.')
             except Exception:
                 traceback.print_exc()
             finally:
