@@ -23,7 +23,7 @@ import tempfile
 
 import pywikibot
 
-from detection.ffmpeg import detect as ffmpeg_ptrace_detector
+from detection.ffmpeg import detect as ffmpeg_detector
 from detection.pillow import detect as pillow_detector
 
 
@@ -40,7 +40,7 @@ def detect(f):
     size = os.path.getsize(f)
 
     hasfound = False
-    for detector in [pillow_detector, ffmpeg_ptrace_detector]:
+    for detector in [pillow_detector, ffmpeg_detector]:
         detection = detector(f)
         if detection:
             pos, posexact = detection
@@ -48,7 +48,7 @@ def detect(f):
                 continue
 
             hasfound = True
-            if pos != size and posexact:
+            if pos < size * 0.8 and posexact:
                 break
 
     if not hasfound:
@@ -75,6 +75,8 @@ def detect(f):
             tmp.flush()
 
             mime = filetype(tmp.name), filetype(tmp.name, False)
+            if mime == ('application/octet-stream', 'data'):
+                mime = None
 
     return {
         'pos': pos,
