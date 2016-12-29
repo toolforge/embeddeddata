@@ -44,6 +44,9 @@ def detect(f):
         detection = detector(f)
         if detection:
             pos, posexact = detection
+            if not pos:
+                continue
+
             hasfound = True
             if pos != size and posexact:
                 break
