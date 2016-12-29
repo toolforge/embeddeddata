@@ -1,0 +1,9 @@
+*.pyc
+/config.py
+
+# Pywikibot stuffs
+/apicache/*
+/env/*
+/logs/*
+/throttle.ctrl
+/pywikibot.lwp
