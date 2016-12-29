@@ -14,3 +14,7 @@
 # You should have received a copy of the GNU General License
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
+
+
+def detect(f):
+    return

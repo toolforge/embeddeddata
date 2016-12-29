@@ -18,6 +18,7 @@
 import os
 import shutil
 import tempfile
+import traceback
 import urllib
 import uuid
 
@@ -63,7 +64,8 @@ def run_worker():
                     if not res['posexact']:
                         pos = 'about ' + pos
 
-                    mime = 'Detected MIME: %s (%s)' % res['pos']['mime']
+                    mime = 'Detected MIME: %s (%s)' % res['mime'] \
+                        if res['mime'] else ''
                     msg = ('File suspected to contain [[COM:CSD#F9|'
                            'embedded data]] after %s. %s' % (
                                 pos, mime
@@ -73,6 +75,8 @@ def run_worker():
                     filepage.text = ('{{speedy|1=%s}}\n' % msg) + filepage.text
                     filepage.save('Bot: Adding {{[[Template:speedy|speedy]]}} '
                                   'to this embeded data suspect.')
+            except Exception:
+                traceback.print_exc()
             finally:
                 os.remove(path)
 

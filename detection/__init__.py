@@ -15,6 +15,66 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+from __future__ import absolute_import
+
+import os
+import subprocess
+import tempfile
+
+import pywikibot
+
+from detection.ffmpeg import detect as ffmpeg_ptrace_detector
+from detection.pillow import detect as pillow_detector
+
+
+def filetype(path, mime=True):
+    args = ['file', path, '-b']
+    if mime:
+        # not '-i' because we don't need '; charset=binary'
+        args.append('--mime-type')
+
+    return subprocess.check_output(args).strip()
+
 
 def detect(f):
-    return False
+    size = os.path.getsize(f)
+
+    hasfound = False
+    for detector in [pillow_detector, ffmpeg_ptrace_detector]:
+        detection = detector(f)
+        if detection:
+            pos, posexact = detection
+            hasfound = True
+            if pos != size and posexact:
+                break
+
+    if not hasfound:
+        pywikibot.warn('FIXME: Unsupported mime: ' + filetype(f))
+        return
+    elif pos == size:
+        return
+
+    pos, posexact = detection
+
+    # Split and analyse
+    chunk_size = 1 << 20
+
+    mime = None
+    with open(f, 'rb') as fin:
+        with tempfile.NamedTemporaryFile() as tmp:
+            fin.seek(pos)
+            while True:
+                read = fin.read(chunk_size)
+                if not read:
+                    break
+                tmp.write(read)
+
+            tmp.flush()
+
+            mime = filetype(tmp.name), filetype(tmp.name, False)
+
+    return {
+        'pos': pos,
+        'posexact': posexact,
+        'mime': mime
+    }
