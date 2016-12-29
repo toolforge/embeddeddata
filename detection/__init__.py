@@ -43,9 +43,11 @@ def detect(f):
     for detector in [pillow_detector, ffmpeg_detector]:
         detection = detector(f)
         if detection:
-            pos, posexact = detection
-            if not pos:
+            _pos, _posexact = detection
+            if not _pos:
                 continue
+
+            pos, posexact = _pos, _posexact
 
             hasfound = True
             if pos < size * 0.8 and posexact:
