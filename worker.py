@@ -57,7 +57,7 @@ def run_worker():
                     force=True) > 200:
                 continue
 
-            path = os.path.join(tmpdir, uuid.uuid1())
+            path = os.path.join(tmpdir, str(uuid.uuid1()))
 
             # Download
             try:
