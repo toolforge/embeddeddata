@@ -46,7 +46,7 @@ def run_worker():
         redis = Redis(host="tools-redis")
 
         while True:
-            title = redis.blpop(REDIS_KEY)
+            _, title = redis.blpop(REDIS_KEY)
             pywikibot.output('Received: %s' % title)
             filepage = pywikibot.FilePage(site, title)
 
