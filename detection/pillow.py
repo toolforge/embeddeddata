@@ -36,6 +36,11 @@ class FileProxy(object):
         self.__update()
         return ret
 
+    def readline(self):
+        ret = self.f.readline()
+        self.__update()
+        return ret
+
     def seek(self, offset):
         ret = self.f.seek(offset)
         self.__update()
