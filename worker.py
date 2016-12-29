@@ -77,6 +77,9 @@ def run_worker():
                                 pos, mime
                            ))
 
+                    pywikibot.output(u"\n\n>>> %s <<<"
+                                     % filepage.title(asLink=True))
+                    pywikibot.output(msg)
                     # for now: add a {{speedy}}
                     filepage.text = ('{{speedy|1=%s}}\n' % msg) + filepage.text
                     filepage.save('Bot: Adding {{[[Template:speedy|speedy]]}} '
