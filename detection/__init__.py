@@ -75,9 +75,11 @@ def detect(f):
             tmp.flush()
 
             mime = filetype(tmp.name), filetype(tmp.name, False)
-            if mime == ('application/octet-stream', 'data'):
+            if mime[0] == 'application/octet-stream':
                 mime = None
 
+                if pos > 0.5 * size:
+                    return
     return {
         'pos': pos,
         'posexact': posexact,
