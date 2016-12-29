@@ -39,4 +39,7 @@ def detect(f):
                 '-f', minor,
                 tmp.name]
         subprocess.call(args)
-        return os.path.getsize(tmp.name), False
+
+        size = os.path.getsize(tmp.name)
+        if size:
+            return size, False
