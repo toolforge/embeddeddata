@@ -61,7 +61,7 @@ def run_worker():
 
             # Download
             try:
-                urllib.urlretrieve(filepage.fileUrl, path)
+                urllib.urlretrieve(filepage.fileUrl(), path)
 
                 res = detect(path)
                 if res:
