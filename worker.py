@@ -53,7 +53,7 @@ def run_worker():
             if not filepage.exists():
                 continue
 
-            if filepage.getLatestUploader().editCount(force=True) > 200:
+            if filepage.latest_file_info.user.editCount(force=True) > 200:
                 continue
 
             path = os.path.join(tmpdir, uuid.uuid1())
