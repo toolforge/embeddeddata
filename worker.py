@@ -47,6 +47,7 @@ def run_worker():
 
         while True:
             title = redis.blpop(REDIS_KEY)
+            pywikibot.output('Received: %s' % title)
             filepage = pywikibot.FilePage(site, title)
 
             if not filepage.exists():
