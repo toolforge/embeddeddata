@@ -112,10 +112,10 @@ def detect(f):
             tmp.flush()
 
             mime = filetype(tmp.name), filetype(tmp.name, False)
-            if mime[0] == 'application/octet-stream':
+            if mime[0] in ['application/octet-stream', 'text/plain']:
                 mime = None
 
-                if pos > 0.5 * size:
+                if pos > 0.8 * size:
                     return
     return {
         'pos': pos,
