@@ -89,3 +89,6 @@ class FileProxy(object):
 
     def tell(self):
         return self.__pos
+
+    def close(self):
+        return self.__f.close()

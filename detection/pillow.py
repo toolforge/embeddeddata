@@ -33,13 +33,26 @@ def detect(f):
         image = Image.open(f)
 
         image.tobytes()
+
         try:
             image._getexif()
-        except Exception:
+        except AttributeError:
             # Some images do not have this method
+            pass
+
+        try:
+            while True:
+                try:
+                    image.seek(image.tell() + 1)
+                except EOFError:
+                    break
+        except AttributeError:
+            # non-gifs
             pass
     except Exception:
         traceback.print_exc()
         return
+    finally:
+        f.close()
 
     return f._maxseek, True

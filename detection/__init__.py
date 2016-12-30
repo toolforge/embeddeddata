@@ -45,7 +45,8 @@ def detect(f):
     if minor in [
         'jpg', 'jpeg',
         'png',
-        'tiff'
+        'tiff',
+        'gif'
     ]:
         detector = pillow_detector
     elif minor in [
