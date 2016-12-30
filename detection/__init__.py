@@ -25,6 +25,7 @@ import pywikibot
 
 from detection.ffmpeg import detect as ffmpeg_detector
 from detection.pillow import detect as pillow_detector
+from detection.marker import find_marker
 
 
 def filetype(path, mime=True):
@@ -57,9 +58,13 @@ def detect(f):
     ]:
         detector = ffmpeg_detector
     elif minor == 'pdf':
-        pass  # FIXME
-    elif minor == 'gif':
-        pass  # FIXME
+        # ISO 32000-1:2008
+        # 7.5.5. File Trailer
+        # The trailer of a PDF file enables a conforming reader to quickly
+        # find the cross-reference table and certain special objects.
+        # Conforming readers should read a PDF file from its end. The last
+        # line of the file shall contain only the end-of-file marker, %%EOF.
+        detector = find_marker(['%%EOF', '%%EOF\n', '%%EOF\r\n', '%%EOF\r'])
     elif minor in ['svg+xml', 'svg']:
         pass  # FIXME
     elif minor in ['vnd.djvu', 'djvu']:
