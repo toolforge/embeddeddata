@@ -110,7 +110,7 @@ def detect(f):
                 tmp.write(read)
 
             tmp.flush()
-            __import__('shutil').copyfile(tmp.name, '/tmp/test')
+            # __import__('shutil').copyfile(tmp.name, '/tmp/test')
             mime = filetype(tmp.name), filetype(tmp.name, False)
             if mime[0] in ['application/octet-stream', 'text/plain']:
                 mime = None
