@@ -35,7 +35,6 @@ def find_marker(markers):
 
                     if any(map(lambda m: m in search[-len(m):], markers)):
                         lastpos = f.tell()
-                        print repr(search), lastpos
                     elif lastpos:
                         break
 
