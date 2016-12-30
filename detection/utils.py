@@ -59,7 +59,6 @@ class FileProxy(object):
                 ext = self.__pos % self.CHUNK_SIZE
                 r = self.chunk[ext:min(len(self.chunk), ext+size)]
                 self.__pos += len(r)
-                print self.__pos
                 size -= len(r)
                 self.__load_chunk()
                 ret += r

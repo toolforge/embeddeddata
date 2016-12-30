@@ -39,24 +39,51 @@ def filetype(path, mime=True):
 def detect(f):
     size = os.path.getsize(f)
 
-    hasfound = False
-    for detector in [pillow_detector, ffmpeg_detector]:
-        detection = detector(f)
-        if detection:
-            _pos, _posexact = detection
-            if not _pos:
-                continue
+    major, minor = filetype(f).split('/')
 
-            pos, posexact = _pos, _posexact
-
-            hasfound = True
-            if pos < size * 0.8 and posexact:
-                break
-
-    if not hasfound:
+    detector = None
+    if minor in [
+        'jpg', 'jpeg',
+        'png',
+        'tiff'
+    ]:
+        detector = pillow_detector
+    elif minor in [
+        'ogg',
+        'wav',
+        'x-flac', 'flac',
+        'webm'
+    ]:
+        detector = ffmpeg_detector
+    elif minor == 'pdf':
+        pass  # FIXME
+    elif minor == 'gif':
+        pass  # FIXME
+    elif minor in ['svg+xml', 'svg']:
+        pass  # FIXME
+    elif minor in ['vnd.djvu', 'djvu']:
+        pass  # FIXME
+    elif minor in ['x-xcf', 'xcf']:
+        pass  # FIXME
+    elif minor == ['midi', 'mid']:
+        pass  # FIXME
+    else:
+        pywikibot.warn('FIXME: Unexpected mime: ' + filetype(f))
+        return
+    if not detector:
         pywikibot.warn('FIXME: Unsupported mime: ' + filetype(f))
         return
-    elif pos == size:
+
+    detection = detector(f)
+    if not detection:
+        pywikibot.warn('FIXME: Failed detection')
+        return
+
+    pos, posexact = detection
+    if pos == size:
+        return
+    elif not pos:
+        pywikibot.warn('FIXME: Failed detection')
         return
 
     # Split and analyse
