@@ -66,7 +66,11 @@ def detect(f):
         # line of the file shall contain only the end-of-file marker, %%EOF.
         detector = find_marker(['%%EOF', '%%EOF\n', '%%EOF\r\n', '%%EOF\r'])
     elif minor in ['svg+xml', 'svg']:
-        pass  # FIXME
+        # The closing xml tag of svg files
+        detector = find_marker([
+            '</svg>', '</svg>\n', '</svg>\r\n', '</svg>\r',
+            '</SVG>', '</SVG>\n', '</SVG>\r\n', '</SVG>\r',
+        ])
     elif minor in ['vnd.djvu', 'djvu']:
         pass  # FIXME
     elif minor in ['x-xcf', 'xcf']:
