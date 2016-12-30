@@ -28,31 +28,29 @@ ImageFile.MAXBLOCK = 1
 
 
 def detect(f):
-    f = FileProxy(open(f, 'rb'))
-    try:
-        image = Image.open(f)
-
-        image.tobytes()
-
+    with FileProxy(open(f, 'rb')) as f:
         try:
-            image._getexif()
-        except AttributeError:
-            # Some images do not have this method
-            pass
+            image = Image.open(f)
 
-        try:
-            while True:
-                try:
-                    image.seek(image.tell() + 1)
-                except EOFError:
-                    break
-        except AttributeError:
-            # non-gifs
-            pass
-    except Exception:
-        traceback.print_exc()
-        return
-    finally:
-        f.close()
+            image.tobytes()
 
-    return f._maxseek, True
+            try:
+                image._getexif()
+            except AttributeError:
+                # Some images do not have this method
+                pass
+
+            try:
+                while True:
+                    try:
+                        image.seek(image.tell() + 1)
+                    except EOFError:
+                        break
+            except AttributeError:
+                # non-gifs
+                pass
+        except Exception:
+            traceback.print_exc()
+            return
+
+        return f._maxseek, True

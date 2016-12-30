@@ -19,6 +19,8 @@ from __future__ import absolute_import
 
 import traceback
 
+from detection.utils import FileProxy
+
 
 def find_marker(markers):
     longestmarker = max(map(lambda m: len(m), markers))
@@ -27,7 +29,7 @@ def find_marker(markers):
         search = ''
         lastpos = None
         try:
-            with open(f, 'rb') as f:
+            with FileProxy(open(f, 'rb'), track=False) as f:
                 while True:
                     r = f.read(1)
                     search += r

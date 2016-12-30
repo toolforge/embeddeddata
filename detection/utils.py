@@ -21,11 +21,14 @@ import os
 class FileProxy(object):
     CHUNK_SIZE = 1 << 16
 
-    def __init__(self, f):
+    def __init__(self, f, track=True):
         self.__f = f
         self.__pos = self._maxseek = f.tell()
         self.__chunkpos = None
         self.__load_chunk()
+
+        if not track:
+            self.__update = lambda: None
 
     def __load_chunk(self):
         base, ext = divmod(self.__pos, self.CHUNK_SIZE)
@@ -92,3 +95,9 @@ class FileProxy(object):
 
     def close(self):
         return self.__f.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
