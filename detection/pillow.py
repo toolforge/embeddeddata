@@ -39,6 +39,7 @@ class FileProxy(object):
             return
 
         self.__chunkpos = base
+        # print 'IO'
         self.__f.seek(base)
         tell = self.__f.tell()
         self.chunk = self.__f.read(self.CHUNK_SIZE)
@@ -68,7 +69,7 @@ class FileProxy(object):
                 size -= len(r)
                 self.__load_chunk()
                 ret += r
-                if not r:
+                if not r or not size:
                     break
 
         self.__update()
@@ -99,7 +100,11 @@ def detect(f):
         image = Image.open(f)
 
         image.tobytes()
-        image._getexif()
+        try:
+            image._getexif()
+        except Exception:
+            # Some images do not have this method
+            pass
     except Exception:
         traceback.print_exc()
         return
