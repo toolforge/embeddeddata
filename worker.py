@@ -97,13 +97,13 @@ def run_worker():
         shutil.rmtree(tmpdir)
 
 
-def overwrite(filepage, msg, res):
+def add_speedy(filepage, msg, res):
     filepage.text = ('<!--{{speedy|1=%s}}-->\n' % msg) + filepage.text
     filepage.save('Bot: Adding {{[[Template:speedy|speedy]]}} '
                   'to this embedded data suspect.')
 
 
-def add_speedy(filepage, msg, res):
+def overwrite(filepage, msg, res):
     with tempfile.NamedTemporaryFile() as tmp:
         urllib.urlretrieve(filepage.fileUrl(), tmp.name)
         tmp.truncate(res['pos'])
