@@ -30,13 +30,12 @@ def detect(f):
 
     f = os.path.abspath(f)
     major, minor = filetype(f).split('/')
-    with tempfile.NamedTemporaryFile() as tmp:
+    with tempfile.NamedTemporaryFile(suffix='.'+minor) as tmp:
         args = ['ffmpeg',
                 '-loglevel', 'warning',
                 '-y',
                 '-i', f,
                 '-c', 'copy',
-                '-f', minor,
                 tmp.name]
         subprocess.call(args)
 
