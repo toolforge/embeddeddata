@@ -110,13 +110,16 @@ def detect(f):
                 tmp.write(read)
 
             tmp.flush()
-
+            __import__('shutil').copyfile(tmp.name, '/tmp/test')
             mime = filetype(tmp.name), filetype(tmp.name, False)
             if mime[0] in ['application/octet-stream', 'text/plain']:
                 mime = None
 
                 if pos > 0.8 * size:
                     return
+            elif size - pos < 512:
+                return
+
     return {
         'pos': pos,
         'posexact': posexact,
