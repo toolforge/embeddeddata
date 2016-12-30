@@ -81,7 +81,8 @@ def run_worker():
                     pywikibot.output(u"\n\n>>> %s <<<"
                                      % filepage.title(asLink=True))
                     pywikibot.output(msg)
-                    if res['mime'][0] == filepage.latest_file_info.mime and \
+                    if res['mime'] and res['mime'][0] == \
+                            filepage.latest_file_info.mime and \
                             res['posexact']:
                         overwrite(filepage, msg, res)
                     else:
