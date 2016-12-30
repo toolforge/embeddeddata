@@ -81,10 +81,12 @@ def run_worker():
                     pywikibot.output(u"\n\n>>> %s <<<"
                                      % filepage.title(asLink=True))
                     pywikibot.output(msg)
-                    # for now: add a {{speedy}}
-                    filepage.text = ('{{speedy|1=%s}}\n' % msg) + filepage.text
-                    filepage.save('Bot: Adding {{[[Template:speedy|speedy]]}} '
-                                  'to this embedded data suspect.')
+                    if res['mime'][0] == filepage.latest_file_info.mime and \
+                            res['posexact']:
+                        overwrite(filepage, msg, res)
+                    else:
+                        add_speedy(filepage, msg, res)
+
             except Exception:
                 traceback.print_exc()
             finally:
@@ -93,6 +95,19 @@ def run_worker():
         pywikibot.output("Exit - THIS SHOULD NOT HAPPEN")
     finally:
         shutil.rmtree(tmpdir)
+
+
+def overwrite(filepage, msg, res):
+    filepage.text = ('<!--{{speedy|1=%s}}-->\n' % msg) + filepage.text
+    filepage.save('Bot: Adding {{[[Template:speedy|speedy]]}} '
+                  'to this embedded data suspect.')
+
+
+def add_speedy(filepage, msg, res):
+    with tempfile.NamedTemporaryFile() as tmp:
+        urllib.urlretrieve(filepage.fileUrl(), tmp.name)
+        tmp.truncate(res['pos'])
+        filepage.upload(tmp.name, comment=msg, ignore_warnings=True)
 
 
 def main():
