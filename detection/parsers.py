@@ -21,8 +21,21 @@
 from __future__ import absolute_import
 
 import os
+import xml.etree.ElementTree as ET
 
 from detection.utils import FileProxy
+
+
+matroska_spec = os.path.join(
+    os.path.dirname(__file__), 'matroska_embl_specdata.xml')
+matroska_spec = ET.parse(matroska_spec).getroot()
+matroska_spec = [node.attrib for node in matroska_spec.iter('element')]
+matroska_spec = {int(typ['id'], 0): {
+    'name': typ['name'],
+    'level': int(typ['level']),
+    'id': int(typ['id'], 0),
+    'type': typ['type'],
+} for typ in matroska_spec}
 
 
 class FileCorrupted(Exception):
@@ -39,6 +52,8 @@ class ParserDetector(object):
             try:
                 if parsetype == 'ogg':
                     self.parse_ogg(f)
+                if parsetype == 'webm':
+                    self.parse_embl(f, matroska_spec)
                 else:
                     raise RuntimeError('Wrong parsetype!')
             except (FileCorrupted, ValueError, TypeError):
@@ -76,3 +91,64 @@ class ParserDetector(object):
                 f.seek(numdata, os.SEEK_CUR)
 
             self.lastgoodpos = f.tell()
+
+    def parse_embl(self, f, spec):
+        # Based on http://matroska-org.github.io/libebml/specs.html
+
+        def seperate(maxsize, includelead):
+            t = ord(f.read(1))
+            test = 0b10000000
+            for i in range(maxsize):
+                if t & test:
+                    size = i
+                    break
+                test = (test >> 1)
+            else:
+                raise FileCorrupted
+
+            return chr(t if includelead else t & ~test) + f.read(size)
+
+        def parse(lvl):
+            # A node
+
+            # Element ID
+            nodeid = seperate(4, True)
+            nodeid = reduce(lambda x, r: (x << 8) + r, map(ord, nodeid))
+            # print hex(nodeid)
+
+            # Data size
+            datasize = seperate(8, False)
+            datasize = reduce(lambda x, r: (x << 8) + r, map(ord, datasize))
+            # print hex(datasize), hex(f.tell())
+
+            try:
+                nodetype = spec[nodeid]
+            except KeyError:
+                # These exist, for some reason
+                nodetype = {
+                    'name': '?',
+                    'level': -1,
+                    'id': nodeid,
+                    'type': '?',
+                }
+                # raise FileCorrupted
+
+            # print nodetype['name']
+
+            if nodetype['level'] != lvl and nodetype['level'] > 0:
+                raise FileCorrupted
+
+            if nodetype['type'] == 'master':
+                pos = f.tell()
+                while f.tell() < pos + datasize:
+                    parse(lvl+1)
+                if f.tell() != pos + datasize:
+                    raise FileCorrupted
+            else:
+                f.seek(datasize, os.SEEK_CUR)
+
+            if lvl == 0 and nodetype['name'] != '?':
+                self.lastgoodpos = f.tell()
+
+        while True:
+            parse(0)

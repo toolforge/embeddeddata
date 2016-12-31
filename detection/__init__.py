@@ -54,11 +54,13 @@ def detect(f):
     elif minor in [
         'x-wav', 'wav',
         'x-flac', 'flac',
-        'webm'
     ]:
         detector = ffmpeg_detector
-    elif minor == 'ogg':
-        detector = lambda f: ParserDetector(f).parse('ogg')
+    elif minor in [
+        'ogg',
+        'webm'
+    ]:
+        detector = lambda f: ParserDetector(f).parse(minor)
     elif minor == 'pdf':
         # ISO 32000-1:2008
         # 7.5.5. File Trailer

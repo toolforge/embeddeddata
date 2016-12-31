@@ -113,6 +113,44 @@ class FileProxy(object):
         self.close()
 
 
+class SubFileProxy(object):
+    def __init__(self, f, start, size):
+        self.__f = f
+        self.__start = start
+        self.__end = start + size
+        f.seek(start)
+
+    def read(self, size=-1):
+        if size < 0:
+            return self.__f.read(self.__end - self.__f.tell())
+        elif size > 0:
+            return self.__f.read(min(size, self.__end - self.__f.tell()))
+        return ''
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        if whence == os.SEEK_SET:
+            self.__f.seek(self.__start + offset)
+        elif whence == os.SEEK_CUR:
+            pos = self.__f.tell() + offset
+            pos = min(max(pos, self.__start), self.__end)
+            self.__f.seek(pos)
+        elif whence == os.SEEK_END:
+            assert offset <= 0
+            self.__f.seek(self.__end + offset)
+
+    def tell(self):
+        return self.__f.tell() - self.__start
+
+    def close(self):
+        return self.__f.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 class SyscallTracer(object):
     def __init__(self, program, syscallHandler):
         self.program = program
