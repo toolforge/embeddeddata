@@ -26,7 +26,7 @@ import subprocess
 import tempfile
 
 
-def detect(f):
+def remux_detect(f):
     from detection import filetype
 
     f = os.path.abspath(f)
@@ -47,3 +47,62 @@ def detect(f):
         size = os.path.getsize(tmp.name)
         if size:
             return size, False
+
+
+def strace_detect(f):
+    from detection.utils import SyscallTracer
+
+    # matroska supports (almost?) all codecs
+    f = os.path.abspath(f)
+    args = ['ffmpeg',
+            '-loglevel', 'warning',
+            '-y',
+            '-i', f,
+            '-c', 'copy',
+            '-f', 'matroska',
+            '/dev/null']
+
+    quotedf = "'%s'" % f  # HACK
+
+    fhs = [None, None]  # [in, out] file handlers
+    recordstate = {
+        'active': True,
+        'maxpos': 0,
+        'pos': None,
+    }
+
+    def update():
+        recordstate['maxpos'] = max(recordstate['pos'], recordstate['maxpos'])
+
+    def syscallHandler(syscall):
+        # HACK
+
+        # __import__('code').interact('Shell: ', local=locals())
+        if syscall.name == 'open':
+            path = syscall.arguments[0].format()
+            if path == quotedf:
+                fhs[0] = syscall.result
+                recordstate['pos'] = 0
+            elif path == "'/dev/null'":
+                fhs[1] = syscall.result
+        elif syscall.name == 'close':
+            fh = syscall.arguments[0].value
+            if fh == fhs[0]:
+                fhs[0] = None
+            elif fh == fhs[1]:
+                fhs[1] = None
+        elif syscall.name == 'lseek' and syscall.arguments[0].value == fhs[0]:
+            recordstate['pos'] = syscall.result
+            # print(recordstate['pos'])
+        elif syscall.name == 'read' and syscall.arguments[0].value == fhs[0]:
+            if syscall.result:
+                recordstate['pos'] += syscall.result
+            else:
+                recordstate['active'] = False
+        elif syscall.name == 'write' and syscall.arguments[0].value == fhs[1]:
+            if syscall.result and recordstate['active']:
+                recordstate['maxpos'] = max(recordstate['pos'],
+                                            recordstate['maxpos'])
+
+    SyscallTracer(args, syscallHandler).main()
+    return recordstate['maxpos'], False
