@@ -31,6 +31,8 @@ def detect(f):
 
     f = os.path.abspath(f)
     ext = mimetypes.guess_extension(filetype(f), strict=False)
+    if ext[0] == '.':
+        ext = ext[1:]
     with tempfile.NamedTemporaryFile(suffix='.'+ext) as tmp:
         args = ['ffmpeg',
                 '-loglevel', 'warning',
