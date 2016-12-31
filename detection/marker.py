@@ -21,23 +21,33 @@ import traceback
 
 from detection.utils import FileProxy
 
+CHUNK_SIZE = 1 << 16
 
-def find_marker(markers):
-    longestmarker = max(map(lambda m: len(m), markers))
 
+def search(search, substr, back=True, reverse=False):
+    ret = search.rfind(substr) if reverse else search.find(substr)
+    if ret >= 0 and back:
+        ret += len(substr)
+    return ret
+
+
+def find_marker(markers, cont=False):
     def detect(f):
-        search = ''
+        readpos = 0
+        chunks = ('', '')
         lastpos = None
         try:
             with FileProxy(open(f, 'rb'), track=False) as f:
                 while True:
-                    r = f.read(1)
-                    search += r
-                    search = search[-longestmarker:]
+                    r = f.read(CHUNK_SIZE)
+                    readpos += len(chunks[0])
+                    chunks = chunks[1], r
 
-                    if any(map(lambda m: m in search[-len(m):], markers)):
-                        lastpos = f.tell()
-                    elif lastpos:
+                    pos = max([search(''.join(chunks), m, True, cont)
+                               for m in markers])
+                    if pos >= 0:
+                        lastpos = pos + readpos
+                    elif lastpos and not cont:
                         break
 
                     if not r:

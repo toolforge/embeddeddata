@@ -64,7 +64,8 @@ def detect(f):
         # find the cross-reference table and certain special objects.
         # Conforming readers should read a PDF file from its end. The last
         # line of the file shall contain only the end-of-file marker, %%EOF.
-        detector = find_marker(['%%EOF', '%%EOF\n', '%%EOF\r\n', '%%EOF\r'])
+        detector = find_marker(
+            ['%%EOF', '%%EOF\n', '%%EOF\r\n', '%%EOF\r'], cont=True)
     elif minor in ['svg+xml', 'svg']:
         # The closing xml tag of svg files
         detector = find_marker([

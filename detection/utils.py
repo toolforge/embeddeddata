@@ -19,7 +19,7 @@ import os
 
 
 class FileProxy(object):
-    CHUNK_SIZE = 1 << 16
+    CHUNK_SIZE = 1 << 20
 
     def __init__(self, f, track=True):
         self.__f = f
@@ -56,9 +56,14 @@ class FileProxy(object):
                 ret += r
                 if not r:
                     break
+        elif size == 1:
+            ext = self.__pos % self.CHUNK_SIZE
+            ret = self.chunk[ext:min(len(self.chunk), ext+1)]
+            self.__pos += 1
+            self.__load_chunk()
         elif size > 0:
             ret = ''
-            while True:
+            while size:
                 ext = self.__pos % self.CHUNK_SIZE
                 r = self.chunk[ext:min(len(self.chunk), ext+size)]
                 self.__pos += len(r)
