@@ -21,6 +21,7 @@
 from __future__ import absolute_import, print_function
 
 import os
+import mimetypes
 import subprocess
 import tempfile
 
@@ -29,8 +30,8 @@ def detect(f):
     from detection import filetype
 
     f = os.path.abspath(f)
-    major, minor = filetype(f).split('/')
-    with tempfile.NamedTemporaryFile(suffix='.'+minor) as tmp:
+    ext = mimetypes.guess_extension(filetype(f), strict=False)
+    with tempfile.NamedTemporaryFile(suffix='.'+ext) as tmp:
         args = ['ffmpeg',
                 '-loglevel', 'warning',
                 '-y',

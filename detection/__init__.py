@@ -52,7 +52,7 @@ def detect(f):
         detector = pillow_detector
     elif minor in [
         'ogg',
-        'wav',
+        'x-wav', 'wav',
         'x-flac', 'flac',
         'webm'
     ]:
