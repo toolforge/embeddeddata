@@ -118,6 +118,8 @@ def detect(f):
 
                 if pos > 0.8 * size:
                     return
+                if mime[0] == 'image/jpeg' and pos > 0.5:
+                    return
             elif size - pos < 512:
                 return
 
