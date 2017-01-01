@@ -25,6 +25,7 @@ import pywikibot
 
 from detection.ffmpeg import remux_detect as ffmpeg_detector
 from detection.pillow import detect as pillow_detector
+from detection.wave import detect as wave_detector
 from detection.marker import find_marker
 from detection.parsers import ParserDetector
 
@@ -51,16 +52,15 @@ def detect(f):
         'gif'
     ]:
         detector = pillow_detector
-    elif minor in [
-        'x-wav', 'wav',
-        'x-flac', 'flac',
-    ]:
+    elif minor in ['x-flac', 'flac']:
         detector = ffmpeg_detector
     elif minor in [
         'ogg',
         'webm'
     ]:
         detector = lambda f: ParserDetector(f).parse(minor)
+    elif minor in ['x-wav', 'wav']:
+        detector = wave_detector
     elif minor == 'pdf':
         # ISO 32000-1:2008
         # 7.5.5. File Trailer
