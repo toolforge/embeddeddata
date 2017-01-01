@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import os
 import xml.etree.ElementTree as ET
 
-from detection.utils import FileProxy
+from detection.utils import FileProxy  # , BinaryFileProxy
 
 
 matroska_spec = os.path.join(
@@ -52,7 +52,9 @@ class ParserDetector(object):
             try:
                 if parsetype == 'ogg':
                     self.parse_ogg(f)
-                if parsetype == 'webm':
+                # elif parsetype == 'flac':
+                #     self.parse_flac(f)
+                elif parsetype == 'webm':
                     self.parse_embl(f, matroska_spec)
                 else:
                     raise RuntimeError('Wrong parsetype!')
@@ -63,12 +65,11 @@ class ParserDetector(object):
 
     def parse_ogg(self, f):
         # Based on https://www.xiph.org/ogg/doc/framing.html
-        while True:
-            # A page
 
+        # A page
+        while True:
             # Capture pattern
-            a = f.read(4)
-            if not a == 'OggS':
+            if not f.read(4) == 'OggS':
                 raise FileCorrupted
             # Version
             if not f.read(1) == '\x00':
@@ -91,6 +92,107 @@ class ParserDetector(object):
                 f.seek(numdata, os.SEEK_CUR)
 
             self.lastgoodpos = f.tell()
+
+    # def parse_flac(self, f):
+    #     # Based on https://xiph.org/flac/format.html
+    #
+    #     if not f.read(4) == 'fLaC':
+    #         raise FileCorrupted
+    #         # But how did the file pass MIME?
+    #
+    #     # METADATA_BLOCK
+    #     while True:
+    #         r = ord(f.read(1))
+    #         last, typ = r & 128, r & 127
+    #         if typ == 127:
+    #             raise FileCorrupted
+    #
+    #         lenblock = reduce(lambda x, r: (x << 8) + r, map(ord, f.read(3)))
+    #         f.seek(lenblock, os.SEEK_CUR)
+    #
+    #         if last:
+    #             break
+    #
+    #     # FRAME
+    #     while True:
+    #         # FRAME_HEADER
+    #         r = reduce(lambda x, r: (x << 8) + r, map(ord, f.read(2)))
+    #         # Sync code
+    #         if (r & 0b1111111111111100) ^ 0b1111111111111000:
+    #             raise FileCorrupted
+    #         # Reserved
+    #         r & 0b10
+    #         # Blocking strategy
+    #         variable_blocksize = r & 0b1
+    #
+    #         r = ord(f.read(1))
+    #         # Block size
+    #         blocksize = (r & 0b11110000) >> 4
+    #         # Sample rate
+    #         samplerate = (r & 0b1111)
+    #         if samplerate == 0b1111:
+    #             raise FileCorrupted
+    #
+    #         r = ord(f.read(1))
+    #         # Channel assignment
+    #         (r & 0b11110000) >> 4
+    #         # Sample size in bits
+    #         (r & 0b1110) >> 1
+    #         # Reserved
+    #         r & 0b1
+    #
+    #         if variable_blocksize:
+    #             f.seek(6, os.SEEK_CUR)
+    #         else:
+    #             f.seek(5, os.SEEK_CUR)
+    #
+    #         if blocksize == 0b0110:
+    #             f.seek(1, os.SEEK_CUR)
+    #         elif blocksize == 0b0111:
+    #             f.seek(2, os.SEEK_CUR)
+    #
+    #         if samplerate == 0b1100:
+    #             f.seek(1, os.SEEK_CUR)
+    #         elif (samplerate & 0b1100) == 0b1100:
+    #             f.seek(2, os.SEEK_CUR)
+    #
+    #         # CRC-8
+    #         f.seek(1, os.SEEK_CUR)
+    #
+    #         # SUBFRAME
+    #         # SUBFRAME_HEADER
+    #         p = BinaryFileProxy(f)
+    #         # Zero bit padding
+    #         if p.read(1):
+    #             raise FileCorrupted
+    #
+    #         # Subframe type
+    #         subframetype = p.read(6)
+    #         if subframetype & 100000:
+    #             # SUBFRAME_LPC
+    #             pass
+    #         elif subframetype & 10000:
+    #             # reserved
+    #             raise FileCorrupted
+    #         elif subframetype & 1000:
+    #             #
+    #             pass
+    #         elif subframetype & 100:
+    #             # reserved
+    #             pass
+    #         elif subframetype & 10:
+    #             # reserved
+    #             pass
+    #         elif subframetype & 1:
+    #             # SUBFRAME_VERBATIM
+    #             pass
+    #         else:
+    #             # SUBFRAME_CONSTANT
+    #             pass
+    #         # FRAME_FOOTER
+    #         f.seek(2, os.SEEK_CUR)
+    #
+    #         break
 
     def parse_embl(self, f, spec):
         # Based on http://matroska-org.github.io/libebml/specs.html

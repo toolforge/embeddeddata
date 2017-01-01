@@ -113,6 +113,49 @@ class FileProxy(object):
         self.close()
 
 
+class BinaryFileProxy(object):
+    def __init__(self, f):
+        self.__f = f
+        self.__pos = 0
+        self.__load_byte()
+
+    def __load_byte(self):
+        self.curbyte = ord(self.__f.read(1))
+
+    def read(self, size):
+        if size < 0:
+            raise NotImplementedError
+        elif size == 1:
+            if not self.__pos:
+                self.__load_byte()
+                self.__pos = 8
+            self.__pos -= 1
+
+            return (self.curbyte & (1 << self.__pos)) >> self.__pos
+
+        elif size > 1:
+            ret = 0
+            for i in range(size):
+                ret = ret << 1 | self.read(1)
+            return ret
+        return 0
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        raise NotImplementedError
+
+    def tell(self):
+        raise NotImplementedError
+
+    def close(self):
+        return self.__f.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 class SubFileProxy(object):
     def __init__(self, f, start, size):
         self.__f = f
