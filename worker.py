@@ -99,7 +99,7 @@ def run_worker():
 
 
 def add_speedy(filepage, msg, res):
-    filepage.text = ('<!--{{speedy|1=%s}}-->\n' % msg) + filepage.text
+    filepage.text = ('{{speedy|1=%s}}\n' % msg) + filepage.text
     filepage.save('Bot: Adding {{[[Template:speedy|speedy]]}} '
                   'to this embedded data suspect.')
 
