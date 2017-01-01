@@ -30,11 +30,18 @@ def remux_detect(f):
     from detection import filetype
 
     f = os.path.abspath(f)
-    ext = mimetypes.guess_extension(filetype(f), strict=False)
-    if ext[0] == '.':
-        ext = ext[1:]
-    if ext == 'ogx':
-        ext = 'ogg'
+    mime = filetype(f)
+    ext = mimetypes.guess_extension(mime, strict=False)
+    if ext:
+        if ext[0] == '.':
+            ext = ext[1:]
+        if ext == 'ogx':
+            ext = 'ogg'
+    else:
+        # naive get extension from mime
+        ext = mime.split('/')[1]
+        if ext[:2] == 'x-':
+            ext = ext[2:]
     with tempfile.NamedTemporaryFile(suffix='.'+ext) as tmp:
         args = ['ffmpeg',
                 '-loglevel', 'warning',
