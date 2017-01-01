@@ -118,7 +118,7 @@ class ParserDetector(object):
     #         # FRAME_HEADER
     #         r = reduce(lambda x, r: (x << 8) + r, map(ord, f.read(2)))
     #         # Sync code
-    #         if (r & 0b1111111111111100) ^ 0b1111111111111000:
+    #         if r >> 2 != 0b11111111111110:
     #             raise FileCorrupted
     #         # Reserved
     #         r & 0b10
@@ -127,15 +127,15 @@ class ParserDetector(object):
     #
     #         r = ord(f.read(1))
     #         # Block size
-    #         blocksize = (r & 0b11110000) >> 4
+    #         blocksize = r >> 4
     #         # Sample rate
-    #         samplerate = (r & 0b1111)
+    #         samplerate = r & 0b1111
     #         if samplerate == 0b1111:
     #             raise FileCorrupted
     #
     #         r = ord(f.read(1))
     #         # Channel assignment
-    #         (r & 0b11110000) >> 4
+    #         r >> 4
     #         # Sample size in bits
     #         (r & 0b1110) >> 1
     #         # Reserved
