@@ -27,7 +27,7 @@ from detection.utils import FileProxy  # , BinaryFileProxy
 
 
 matroska_spec = os.path.join(
-    os.path.dirname(__file__), 'matroska_embl_specdata.xml')
+    os.path.dirname(__file__), 'matroska_ebml_specdata.xml')
 matroska_spec = ET.parse(matroska_spec).getroot()
 matroska_spec = [node.attrib for node in matroska_spec.iter('element')]
 matroska_spec = {int(typ['id'], 0): {
@@ -55,7 +55,7 @@ class ParserDetector(object):
                 # elif parsetype == 'flac':
                 #     self.parse_flac(f)
                 elif parsetype == 'webm':
-                    self.parse_embl(f, matroska_spec)
+                    self.parse_ebml(f, matroska_spec)
                 else:
                     raise RuntimeError('Wrong parsetype!')
             except (FileCorrupted, ValueError, TypeError):
@@ -194,7 +194,7 @@ class ParserDetector(object):
     #
     #         break
 
-    def parse_embl(self, f, spec):
+    def parse_ebml(self, f, spec):
         # Based on http://matroska-org.github.io/libebml/specs.html
 
         def seperate(maxsize, includelead):
