@@ -15,20 +15,37 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+import signal
+
+from redis import Redis
+
 import pywikibot
 from pywikibot.comms.rcstream import site_rc_listener
 
-from redis import Redis
 from config import REDIS_KEY
+
+TIMEOUT = 60  # We expect at least one rc entry every minute
+
+
+class TimeoutError(Exception):
+    pass
+
+
+def on_timeout(signum, frame):
+    raise TimeoutError
 
 
 def run_watcher():
     site = pywikibot.Site(user="Embedded Data Bot")
     redis = Redis(host="tools-redis")
 
-    rc = site_rc_listener(site)
+    signal.signal(signal.SIGALRM, on_timeout)
+    signal.alarm(TIMEOUT)
 
+    rc = site_rc_listener(site)
     for change in rc:
+        signal.alarm(TIMEOUT)
+
         # Uploads from non-bots
         if not change['bot'] and \
                 change['namespace'] == 6 and \
