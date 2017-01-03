@@ -73,10 +73,10 @@ def run_worker():
 
                     mime = 'Detected MIME: %s (%s)' % res['mime'] \
                         if res['mime'] else ''
-                    msg = ('File suspected to contain [[COM:CSD#F9|'
-                           'embedded data]] after %s. %s' % (
-                                pos, mime
-                           ))
+                    msg = 'After %s. %s' % (pos, mime)
+
+                    msgprefix = ('This file contains [[COM:CSD#F9|'
+                                 'embedded data]]: ')
 
                     pywikibot.output(u"\n\n>>> %s <<<"
                                      % filepage.title(asLink=True))
@@ -84,9 +84,9 @@ def run_worker():
                     if res['mime'] and res['mime'][0] == \
                             filepage.latest_file_info.mime and \
                             res['posexact']:
-                        overwrite(filepage, msg, res)
+                        overwrite(filepage, msg, msgprefix, res)
                     else:
-                        add_speedy(filepage, msg, res)
+                        add_speedy(filepage, msg, msgprefix, res)
 
             except Exception:
                 traceback.print_exc()
@@ -98,17 +98,17 @@ def run_worker():
         shutil.rmtree(tmpdir)
 
 
-def add_speedy(filepage, msg, res):
-    filepage.text = ('{{speedy|1=%s}}\n' % msg) + filepage.text
-    filepage.save('Bot: Adding {{[[Template:speedy|speedy]]}} '
+def add_speedy(filepage, msg, msgprefix, res):
+    filepage.text = '{{embedded data|suspect=1|1=%s}}\n' % msg + filepage.text
+    filepage.save('Bot: Adding {{[[Template:Embedded data|embedded data]]}} '
                   'to this embedded data suspect.')
 
 
-def overwrite(filepage, msg, res):
+def overwrite(filepage, msg, msgprefix, res):
     with tempfile.NamedTemporaryFile() as tmp:
         urllib.urlretrieve(filepage.fileUrl(), tmp.name)
         tmp.truncate(res['pos'])
-        filepage.upload(tmp.name, comment=msg, ignore_warnings=True)
+        filepage.upload(tmp.name, comment=msgprefix+msg, ignore_warnings=True)
 
 
 def main():
