@@ -63,14 +63,14 @@ class FileProxy(object):
                     break
         elif size == 1:
             ext = self.__pos % self.CHUNK_SIZE
-            ret = self.chunk[ext:min(len(self.chunk), ext+1)]
+            ret = self.chunk[ext:ext+1]
             self.__pos += 1
             self.__load_chunk()
         elif size > 0:
             ret = ''
             while size:
                 ext = self.__pos % self.CHUNK_SIZE
-                r = self.chunk[ext:min(len(self.chunk), ext+size)]
+                r = self.chunk[ext:ext+size]
                 self.__pos += len(r)
                 size -= len(r)
                 self.__load_chunk()
