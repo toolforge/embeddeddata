@@ -15,6 +15,9 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+# The ptrace part is largely based on:
+# https://github.com/haypo/python-ptrace/blob/11a117427faee52ebb54de0bc6fe21738cbff7a4/strace.py
+
 import os
 
 from ptrace.debugger import (PtraceDebugger, ProcessExit,

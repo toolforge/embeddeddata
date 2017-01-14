@@ -56,7 +56,8 @@ def detect(f):
         detector = ffmpeg_detector
     elif minor in [
         'ogg',
-        'webm'
+        'webm',
+        'vnd.djvu', 'djvu',
     ]:
         detector = lambda f: ParserDetector(f).parse(minor)
     elif minor in ['x-wav', 'wav']:
@@ -76,8 +77,6 @@ def detect(f):
             '</svg>', '</svg>\n', '</svg>\r\n', '</svg>\r',
             '</SVG>', '</SVG>\n', '</SVG>\r\n', '</SVG>\r',
         ])
-    elif minor in ['vnd.djvu', 'djvu']:
-        pass  # FIXME
     elif minor in ['x-xcf', 'xcf']:
         pass  # FIXME
     elif minor == ['midi', 'mid']:

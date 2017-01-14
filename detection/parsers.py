@@ -15,12 +15,10 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-# The ptrace part is largely based on:
-# https://github.com/haypo/python-ptrace/blob/11a117427faee52ebb54de0bc6fe21738cbff7a4/strace.py
-
 from __future__ import absolute_import
 
 import os
+import chunk
 import xml.etree.ElementTree as ET
 
 from detection.utils import FileProxy  # , BinaryFileProxy
@@ -56,6 +54,8 @@ class ParserDetector(object):
                 #     self.parse_flac(f)
                 elif parsetype == 'webm':
                     self.parse_ebml(f, matroska_spec)
+                elif parsetype in ['vnd.djvu', 'djvu']:
+                    self.parse_djvu(f)
                 else:
                     raise RuntimeError('Wrong parsetype!')
             except (FileCorrupted, ValueError, TypeError):
@@ -254,3 +254,14 @@ class ParserDetector(object):
 
         while True:
             parse(0)
+
+    def parse_djvu(self, f):
+        if not f.read(4) == 'AT&T':
+            raise FileCorrupted
+
+        c = chunk.Chunk(f)
+        if not c.getname() == 'FORM':
+            raise FileCorrupted
+
+        c.close()
+        self.lastgoodpos = f.tell()
