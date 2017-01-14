@@ -259,7 +259,7 @@ class ParserDetector(object):
         if not f.read(4) == 'AT&T':
             raise FileCorrupted
 
-        c = chunk.Chunk(f)
+        c = chunk.Chunk(f, align=False)
         if not c.getname() == 'FORM':
             raise FileCorrupted
 
