@@ -81,12 +81,10 @@ def run_worker():
                     pywikibot.output(u"\n\n>>> %s <<<"
                                      % filepage.title(asLink=True))
                     pywikibot.output(msg)
-                    if res['mime'] and res['mime'][0] == \
-                            filepage.latest_file_info.mime and \
-                            res['posexact']:
-                        overwrite(filepage, msg, msgprefix, res)
-                    else:
-                        add_speedy(filepage, msg, msgprefix, res)
+
+                    for func in [overwrite, delete, add_speedy]:
+                        if func(filepage, msg, msgprefix, res):
+                            break
 
             except Exception:
                 traceback.print_exc()
@@ -98,17 +96,57 @@ def run_worker():
         shutil.rmtree(tmpdir)
 
 
-def add_speedy(filepage, msg, msgprefix, res):
-    filepage.text = '{{embedded data|suspect=1|1=%s}}\n' % msg + filepage.text
-    filepage.save('Bot: Adding {{[[Template:Embedded data|embedded data]]}} '
-                  'to this embedded data suspect.')
-
-
 def overwrite(filepage, msg, msgprefix, res):
-    with tempfile.NamedTemporaryFile() as tmp:
-        urllib.urlretrieve(filepage.fileUrl(), tmp.name)
-        tmp.truncate(res['pos'])
-        filepage.upload(tmp.name, comment=msgprefix+msg, ignore_warnings=True)
+    try:
+        if (res['posexact'] and res['mime'] and
+                res['mime'][0] == filepage.latest_file_info.mime):
+            with tempfile.NamedTemporaryFile() as tmp:
+                urllib.urlretrieve(filepage.fileUrl(), tmp.name)
+                tmp.truncate(res['pos'])
+                filepage.upload(tmp.name,
+                                comment=msgprefix+msg,
+                                ignore_warnings=True)
+                return True
+    except Exception:
+        traceback.print_exc()
+
+
+def delete(filepage, msg, msgprefix, res):
+    try:
+        if not (res['posexact'] and res['mime'] and
+                res['mime'][0] in ['application/x-rar',
+                                   'application/zip',
+                                   'application/x-7z-compressed']):
+                return
+
+        afquery = filepage.site._simple_request(
+            action='query',
+            list='abuselog',
+            aflfilter=166,
+            afltitle=filepage.title())
+        if not afquery.submit()['query']['abuselog']:
+            return
+
+        # T155740 workaround
+        filepage.latest_file_info
+        if len(filepage.get_file_history()) != 1:
+            return
+
+        filepage.delete(msgprefix+msg, prompt=False)
+        return True
+    except Exception:
+        traceback.print_exc()
+
+
+def add_speedy(filepage, msg, msgprefix, res):
+    try:
+        filepage.text = '{{embedded data|suspect=1|1=%s}}\n' % msg + \
+                        filepage.text
+        filepage.save('Bot: Adding {{[[Template:Embedded data|'
+                      'embedded data]]}} to this embedded data suspect.')
+        return True
+    except Exception:
+        traceback.print_exc()
 
 
 def main():
