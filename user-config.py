@@ -3,6 +3,7 @@
 family = 'commons'
 mylang = 'commons'
 usernames['commons']['commons'] = u'Embedded Data Bot'
-sysopnames['commons']['commons'] = 'Embedded Data Bot'
-# authenticate['commons.wikimedia.org'] = ('placeholder', 'placeholder', 'placeholder', 'placeholder')
-# password_file = '/data/project/yifeibot/.pywikibot/password'
+sysopnames['commons']['commons'] = u'Embedded Data Bot'
+
+with open(__import__('os').path.expanduser('~/.oauth-token.json'), 'r') as f:
+    authenticate['commons.wikimedia.org'] = __import__('json').load(f)
