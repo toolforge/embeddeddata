@@ -26,7 +26,7 @@ import pywikibot
 from detection.ffmpeg import remux_detect as ffmpeg_detector
 from detection.pillow import detect as pillow_detector
 from detection.wave import detect as wave_detector
-from detection.marker import find_marker
+from detection.marker import find_marker, last_nonnull
 from detection.parsers import ParserDetector
 
 
@@ -98,6 +98,12 @@ def detect(f):
         return
     elif not pos:
         pywikibot.warn('FIXME: Failed detection')
+        return
+
+    # Analyse possible null padding
+    pos_null = last_nonnull(f)[0]
+    if abs(pos - pos_null) < 16:
+        pywikibot.warn('Null padded')
         return
 
     # Split and analyse

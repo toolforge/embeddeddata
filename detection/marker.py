@@ -60,3 +60,26 @@ def find_marker(markers, cont=False):
             return
 
     return detect
+
+def last_nonnull(f):
+    readpos = 0
+    lastpos = None
+    try:
+        with FileProxy(open(f, 'rb'), track=False) as f:
+            while True:
+                r = f.read(CHUNK_SIZE)
+
+                stripped = r.rstrip('\x00')
+                if stripped:
+                    lastpos = readpos + len(stripped)
+
+                readpos += len(r)
+
+                if not r:
+                    break
+
+        if lastpos:
+            return lastpos, True
+    except Exception:
+        traceback.print_exc()
+        return
