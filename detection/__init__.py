@@ -82,22 +82,22 @@ def detect(f):
     elif minor == ['midi', 'mid']:
         pass  # FIXME
     else:
-        pywikibot.warn('FIXME: Unexpected mime: ' + filetype(f))
+        pywikibot.warning('FIXME: Unexpected mime: ' + filetype(f))
         return
     if not detector:
-        pywikibot.warn('FIXME: Unsupported mime: ' + filetype(f))
+        pywikibot.warning('FIXME: Unsupported mime: ' + filetype(f))
         return
 
     detection = detector(f)
     if not detection:
-        pywikibot.warn('FIXME: Failed detection')
+        pywikibot.warning('FIXME: Failed detection')
         return
 
     pos, posexact = detection
     if pos == size:
         return
     elif not pos:
-        pywikibot.warn('FIXME: Failed detection')
+        pywikibot.warning('FIXME: Failed detection')
         return
 
     # Split and analyse
@@ -129,7 +129,7 @@ def detect(f):
     # Analyse possible null padding
     pos_null = last_nonnull(f)[0]
     if abs(pos - pos_null) < 16:
-        pywikibot.warn('Null padded')
+        pywikibot.warning('Null padded')
         return
 
     return {
