@@ -100,12 +100,6 @@ def detect(f):
         pywikibot.warn('FIXME: Failed detection')
         return
 
-    # Analyse possible null padding
-    pos_null = last_nonnull(f)[0]
-    if abs(pos - pos_null) < 16:
-        pywikibot.warn('Null padded')
-        return
-
     # Split and analyse
     chunk_size = 1 << 20
 
@@ -131,6 +125,12 @@ def detect(f):
                     return
             elif size - pos < 512:
                 return
+
+    # Analyse possible null padding
+    pos_null = last_nonnull(f)[0]
+    if abs(pos - pos_null) < 16:
+        pywikibot.warn('Null padded')
+        return
 
     return {
         'pos': pos,
