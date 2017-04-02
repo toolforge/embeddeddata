@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import os
 import chunk
+import struct
 import xml.etree.ElementTree as ET
 
 from detection.utils import FileProxy  # , BinaryFileProxy
@@ -56,6 +57,8 @@ class ParserDetector(object):
                     self.parse_ebml(f, matroska_spec)
                 elif parsetype in ['vnd.djvu', 'djvu']:
                     self.parse_djvu(f)
+                elif parsetype == 'webp':
+                    self.parse_riff(f)
                 else:
                     raise RuntimeError('Wrong parsetype!')
             except (FileCorrupted, ValueError, TypeError):
@@ -264,4 +267,14 @@ class ParserDetector(object):
             raise FileCorrupted
 
         c.close()
+        self.lastgoodpos = f.tell()
+
+    def parse_riff(self, f):
+        # Based on https://developers.google.com/speed/webp/docs/riff_container
+        # Quick and Dirty
+        if not f.read(4) == 'RIFF':
+            raise FileCorrupted
+
+        lenfile, = struct.unpack('<L', f.read(4))
+        f.seek(lenfile, os.SEEK_CUR)
         self.lastgoodpos = f.tell()
