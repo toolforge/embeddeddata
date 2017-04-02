@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import os
 import chunk
+import math
 import struct
 import xml.etree.ElementTree as ET
 
@@ -59,9 +60,12 @@ class ParserDetector(object):
                     self.parse_djvu(f)
                 elif parsetype == 'webp':
                     self.parse_riff(f)
+                elif parsetype in ['x-xcf', 'xcf']:
+                    self.parse_xcf(f)
                 else:
                     raise RuntimeError('Wrong parsetype!')
             except (FileCorrupted, ValueError, TypeError):
+                __import__('traceback').print_exc()
                 pass
 
             return self.lastgoodpos, True
@@ -278,3 +282,151 @@ class ParserDetector(object):
         lenfile, = struct.unpack('<L', f.read(4))
         f.seek(lenfile, os.SEEK_CUR)
         self.lastgoodpos = f.tell()
+
+    def parse_xcf(self, f):
+        # Based on http://henning.makholm.net/xcftools/xcfspec-saved
+        def try_seek(length, whence=os.SEEK_CUR):
+            pos = f.tell() if whence == os.SEEK_CUR else 0
+            f.seek(length, whence)
+            if f.tell() != pos + length:
+                raise FileCorrupted(length)
+            update()
+
+        def update():
+            self.lastgoodpos = max(self.lastgoodpos, f.tell())
+
+        def string():
+            str_len, = struct.unpack('>L', f.read(4))
+            try_seek(str_len-1, os.SEEK_CUR)
+            if f.read(1) != '\x00':
+                raise FileCorrupted
+
+        def property_list():
+            # property list
+            while True:
+                prop_type, = struct.unpack('>L', f.read(4))
+                prop_len, = struct.unpack('>L', f.read(4))
+
+                try_seek(prop_len, os.SEEK_CUR)
+
+                if prop_type == 0:
+                    break
+            update()
+
+        # MASTER #
+        # magic
+        if not f.read(9) == 'gimp xcf ':
+            raise FileCorrupted
+        # version
+        f.read(4)
+        # terminator
+        if not f.read(1) == '\x00':
+            raise FileCorrupted
+        # width
+        f.read(4)
+        # height
+        f.read(4)
+        # base type
+        f.read(4)
+        # property list
+        property_list()
+
+        p_layers = set()
+        while True:
+            p_layer, = struct.unpack('>L', f.read(4))
+            if p_layer == 0:
+                break
+            p_layers.add(p_layer)
+
+        p_channels = set()
+        while True:
+            p_channel, = struct.unpack('>L', f.read(4))
+            if p_channel == 0:
+                break
+            p_channels.add(p_channel)
+
+        p_hierarchies = set()
+        p_levels = {}
+
+        update()
+
+        # LAYER #
+        for p_layer in p_layers:
+            try_seek(p_layer, os.SEEK_SET)
+            # width
+            f.read(4)
+            # height
+            f.read(4)
+            # type
+            f.read(4)
+            # name
+            string()
+            # property list
+            property_list()
+            # hierarchy
+            p_hierarchy, = struct.unpack('>L', f.read(4))
+            p_hierarchies.add(p_hierarchy)
+            # mask
+            p_mask, = struct.unpack('>L', f.read(4))
+            if p_mask != 0:
+                p_channels.add(p_mask)
+
+            update()
+
+        # CHANNEL #
+        for p_channel in p_channels:
+            try_seek(p_channel, os.SEEK_SET)
+            # width
+            f.read(4)
+            # height
+            f.read(4)
+            # name
+            string()
+            # property list
+            property_list()
+            # hierarchy
+            p_hierarchy, = struct.unpack('>L', f.read(4))
+            p_hierarchies.add(p_hierarchy)
+
+            update()
+
+        # HIERARCHY #
+        for p_hierarchy in p_hierarchies:
+            try_seek(p_hierarchy, os.SEEK_SET)
+            # width
+            f.read(4)
+            # height
+            f.read(4)
+            # bytes per pixel
+            bpp, = struct.unpack('>L', f.read(4))
+            while True:
+                p_level, = struct.unpack('>L', f.read(4))
+                if p_level == 0:
+                    break
+                p_levels[p_level] = bpp
+
+            update()
+
+        # LEVEL #
+        for p_level, bpp in p_levels.items():
+            p_tiles = set()
+
+            try_seek(p_level, os.SEEK_SET)
+            # width
+            width, = struct.unpack('>L', f.read(4))
+            # height
+            height, = struct.unpack('>L', f.read(4))
+            while True:
+                p_tile, = struct.unpack('>L', f.read(4))
+                if p_tile == 0:
+                    break
+                p_tiles.add(p_tile)
+
+            update()
+
+            # # Tiles must be contiguous
+            # if p_tiles:
+            #     try_seek(min(p_tiles), os.SEEK_SET)
+            #     # try_seek(width * height * bpp, os.SEEK_CUR)
+            for p_tile in p_tiles:
+                try_seek(p_tile, os.SEEK_SET)

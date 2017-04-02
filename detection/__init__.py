@@ -58,7 +58,8 @@ def detect(f):
         'ogg',
         'webm',
         'vnd.djvu', 'djvu',
-        'webp'
+        'webp',
+        'x-xcf', 'xcf'
     ]:
         detector = lambda f: ParserDetector(f).parse(minor)
     elif minor in ['x-wav', 'wav']:
