@@ -440,12 +440,12 @@ class ParserDetector(object):
         # https://web.archive.org/web/20161125012350/https://partners.adobe.com/public/developer/en/tiff/TIFF6.pdf
         # FIXME: Tiff Extensions such as NEF or DNG may be false positives
 
-        # datatags = set([
-        #     # (offset, bytecount),
-        #     (111, 117),  # strip
-        #     (120, 121),  # free
-        #     (144, 145),  # tile
-        # ])
+        datatags = set([
+            # (offset, bytecount),
+            (0x111, 0x117),  # strip
+            (0x120, 0x121),  # free
+            (0x144, 0x145),  # tile
+        ])
 
         def try_seek(length, whence=os.SEEK_CUR):
             pos = f.tell() if whence == os.SEEK_CUR else 0
@@ -474,7 +474,7 @@ class ParserDetector(object):
         offset, = struct.unpack(order+'L', f.read(4))
         update()
 
-        # p_datas = {}
+        p_datas = [], []
 
         # IFD
         while offset != 0:
@@ -485,7 +485,7 @@ class ParserDetector(object):
             # directory
             for i in range(num_directories):
                 # tag
-                f.read(2)
+                tag, = struct.unpack(order+'H', f.read(2))
                 # type
                 field_type, = struct.unpack(order+'H', f.read(2))
                 # number of values
@@ -532,8 +532,20 @@ class ParserDetector(object):
 
                     f.seek(curpos)
 
+                for offset_tag, bytecount_tag in datatags:
+                    if tag == offset_tag:
+                        p_datas[0].extend(values)
+                        break
+                    elif tag == bytecount_tag:
+                        p_datas[1].extend(values)
+                        break
+
             offset, = struct.unpack(order+'L', f.read(4))
             update()
+
+        for data_offset, data_bytecount in zip(*p_datas):
+            try_seek(data_offset, os.SEEK_SET)
+            try_seek(data_bytecount, os.SEEK_CUR)
 
         # Remove padding
         f.seek(self.lastgoodpos)
