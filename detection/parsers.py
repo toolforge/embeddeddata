@@ -23,6 +23,8 @@ import math
 import struct
 import xml.etree.ElementTree as ET
 
+import pywikibot
+
 from detection.utils import FileProxy  # , BinaryFileProxy
 
 
@@ -62,6 +64,8 @@ class ParserDetector(object):
                     self.parse_riff(f)
                 elif parsetype in ['x-xcf', 'xcf']:
                     self.parse_xcf(f)
+                elif parsetype == 'tiff':
+                    self.parse_tiff(f)
                 else:
                     raise RuntimeError('Wrong parsetype!')
             except (FileCorrupted, ValueError, TypeError):
@@ -430,3 +434,112 @@ class ParserDetector(object):
             #     # try_seek(width * height * bpp, os.SEEK_CUR)
             for p_tile in p_tiles:
                 try_seek(p_tile, os.SEEK_SET)
+
+    def parse_tiff(self, f):
+        # Based on
+        # https://web.archive.org/web/20161125012350/https://partners.adobe.com/public/developer/en/tiff/TIFF6.pdf
+        # FIXME: Tiff Extensions such as NEF or DNG may be false positives
+
+        # datatags = set([
+        #     # (offset, bytecount),
+        #     (111, 117),  # strip
+        #     (120, 121),  # free
+        #     (144, 145),  # tile
+        # ])
+
+        def try_seek(length, whence=os.SEEK_CUR):
+            pos = f.tell() if whence == os.SEEK_CUR else 0
+            f.seek(length, whence)
+            if f.tell() != pos + length:
+                raise FileCorrupted(length)
+            update()
+
+        def update():
+            self.lastgoodpos = max(self.lastgoodpos, f.tell())
+
+        # byte order
+        order = f.read(2)
+        if order == '\x49\x49':
+            order = '<'
+        elif order == '\x4D\x4D':
+            order = '>'
+        else:
+            raise FileCorrupted
+
+        # Version
+        version, = struct.unpack(order+'H', f.read(2))
+        if version != 42:
+            raise FileCorrupted
+
+        offset, = struct.unpack(order+'L', f.read(4))
+        update()
+
+        # p_datas = {}
+
+        # IFD
+        while offset != 0:
+            try_seek(offset, os.SEEK_SET)
+
+            num_directories, = struct.unpack(order+'H', f.read(2))
+
+            # directory
+            for i in range(num_directories):
+                # tag
+                f.read(2)
+                # type
+                field_type, = struct.unpack(order+'H', f.read(2))
+                # number of values
+                num_val, = struct.unpack(order+'L', f.read(4))
+
+                type_len, type_code = {
+                    1: (1, 'B'),  # byte
+                    2: (1, 'c'),  # ascii
+                    3: (2, 'H'),  # short
+                    4: (4, 'L'),  # long
+                    5: (8, 'Q'),  # rational
+                    6: (1, 'b'),  # sbyte
+                    7: (1, 'c'),  # undefined
+                    8: (2, 'h'),  # sshort
+                    9: (4, 'l'),  # slong
+                    10: (8, 'q'),  # srational,
+                    11: (4, 'f'),  # single
+                    12: (8, 'd'),  # double
+                }.get(field_type, None)
+                if field_type is None:
+                    pywikibot.warning(
+                        'FIXME: TIFF unknown field_type: {}'.format(
+                            field_type))
+                    type_len, type_code = 1, 'c'
+
+                field_len = type_len * num_val
+
+                # IFD entry
+                values = []
+                if field_len <= 4:
+                    for i in range(num_val):
+                        values.append(struct.unpack(
+                            order+type_code, f.read(type_len))[0])
+                    try_seek(4 - field_len, os.SEEK_CUR)
+                else:
+                    dir_offset, = struct.unpack(order+'L', f.read(4))
+                    curpos = f.tell()
+
+                    try_seek(dir_offset, os.SEEK_SET)
+                    for i in range(num_val):
+                        values.append(struct.unpack(
+                            order+type_code, f.read(type_len))[0])
+                    update()
+
+                    f.seek(curpos)
+
+            offset, = struct.unpack(order+'L', f.read(4))
+            update()
+
+        # Remove padding
+        f.seek(self.lastgoodpos)
+        while True:
+            if f.read(1) != '\x00':
+                f.seek(-1, os.SEEK_CUR)
+                break
+            else:
+                update()

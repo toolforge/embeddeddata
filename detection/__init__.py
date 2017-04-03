@@ -48,7 +48,6 @@ def detect(f):
     if minor in [
         'jpg', 'jpeg',
         'png',
-        'tiff',
         'gif'
     ]:
         detector = pillow_detector
@@ -59,7 +58,8 @@ def detect(f):
         'webm',
         'vnd.djvu', 'djvu',
         'webp',
-        'x-xcf', 'xcf'
+        'x-xcf', 'xcf',
+        'tiff',
     ]:
         detector = lambda f: ParserDetector(f).parse(minor)
     elif minor in ['x-wav', 'wav']:
