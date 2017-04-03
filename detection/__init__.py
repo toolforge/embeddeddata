@@ -79,8 +79,6 @@ def detect(f):
             '</svg>', '</svg>\n', '</svg>\r\n', '</svg>\r',
             '</SVG>', '</SVG>\n', '</SVG>\r\n', '</SVG>\r',
         ])
-    elif minor in ['x-xcf', 'xcf']:
-        pass  # FIXME
     elif minor == ['midi', 'mid']:
         pass  # FIXME
     else:
