@@ -68,6 +68,8 @@ class ParserDetector(object):
                     self.parse_tiff(f)
                 elif parsetype == 'png':
                     self.parse_png(f)
+                elif parsetype in ['midi', 'mid']:
+                    self.parse_midi(f)
                 else:
                     raise RuntimeError('Wrong parsetype!')
             except (FileCorrupted, ValueError, TypeError):
@@ -585,3 +587,19 @@ class ParserDetector(object):
 
             if chunk_type == 'IEND':
                 break
+
+    def parse_midi(self, f):
+        # Based on http://www.ccarh.org/courses/253/handout/smf/
+        while True:
+            chunk_id = f.read(4)
+            if chunk_id not in ['MThd', 'MTrk']:
+                raise FileCorrupted
+
+            length, = struct.unpack('>L', f.read(4))
+
+            pos = f.tell()
+            f.seek(length, os.SEEK_CUR)
+            if f.tell() != pos + length:
+                raise FileCorrupted(length)
+
+            self.lastgoodpos = f.tell()
