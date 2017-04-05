@@ -135,6 +135,7 @@ def delete(filepage, msg, msgprefix, res):
         if len(filepage.get_file_history()) != 1:
             return
 
+        add_speedy(filepage, msg, msgprefix, res)
         filepage.delete(msgprefix+msg, prompt=False)
         return True
     except Exception:
@@ -155,6 +156,7 @@ def add_speedy(filepage, msg, msgprefix, res):
 def main():
     pywikibot.handleArgs()
     run_worker()
+
 
 if __name__ == "__main__":
     try:
