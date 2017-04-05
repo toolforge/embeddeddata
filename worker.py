@@ -75,7 +75,7 @@ def run_worker():
 
                         mime = 'Detected MIME: %s (%s)' % item['mime'] \
                             if item['mime'] else 'Unknown MIME'
-                        msg.eppend('After %s: %s' % (pos, mime))
+                        msg.append('After %s: %s' % (pos, mime))
                     msg = '; '.join(msg)
 
                     msgprefix = ('This file contains [[COM:CSD#F9|'
