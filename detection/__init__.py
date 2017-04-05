@@ -29,6 +29,11 @@ from detection.wave import detect as wave_detector
 from detection.marker import find_marker, last_nonnull
 from detection.parsers import ParserDetector
 
+UNKNOWN_TYPES = ['application/octet-stream', 'text/plain']
+ARCHIVE_TYPES = ['application/x-rar',
+                 'application/zip',
+                 'application/x-7z-compressed']
+
 
 def filetype(path, mime=True):
     args = ['file', path, '-b']
@@ -79,8 +84,14 @@ def detect(f):
             '</svg>', '</svg>\n', '</svg>\r\n', '</svg>\r',
             '</SVG>', '</SVG>\n', '</SVG>\r\n', '</SVG>\r',
         ])
-    elif minor == ['midi', 'mid']:
+    elif minor in ['midi', 'mid']:
         pass  # FIXME
+    elif minor in [typ.split('/')[1] for typ in ARCHIVE_TYPES]:
+        # Recursed archival formats
+        return
+    elif minor in [typ.split('/')[1] for typ in UNKNOWN_TYPES]:
+        # Recursed unknown formats
+        return
     else:
         pywikibot.warning('FIXME: Unexpected mime: ' + filetype(f))
         return
@@ -116,7 +127,7 @@ def detect(f):
             tmp.flush()
             # __import__('shutil').copyfile(tmp.name, '/tmp/test')
             mime = filetype(tmp.name), filetype(tmp.name, False)
-            if mime[0] in ['application/octet-stream', 'text/plain']:
+            if mime[0] in UNKNOWN_TYPES:
                 mime = None
 
                 if pos > 0.8 * size:
@@ -126,14 +137,16 @@ def detect(f):
             elif size - pos < 512:
                 return
 
+            ret = detect(tmp.name) or []
+
     # Analyse possible null padding
     pos_null = last_nonnull(f)[0]
     if abs(pos - pos_null) < 16:
         pywikibot.warning('Null padded')
         return
 
-    return {
+    return [{
         'pos': pos,
         'posexact': posexact,
         'mime': mime
-    }
+    }] + ret

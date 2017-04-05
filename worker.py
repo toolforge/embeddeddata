@@ -26,7 +26,7 @@ import pywikibot
 from redis import Redis
 
 from config import REDIS_KEY
-from detection import detect
+from detection import detect, ARCHIVE_TYPES
 
 
 def sizeof_fmt(num, suffix='B'):
@@ -66,14 +66,17 @@ def run_worker():
 
                 res = detect(path)
                 if res:
-                    pos = '%s (%s bytes)' % (sizeof_fmt(res['pos']),
-                                             res['pos'])
-                    if not res['posexact']:
-                        pos = 'about ' + pos
+                    msg = []
+                    for item in res:
+                        pos = '%s (%s bytes)' % (sizeof_fmt(item['pos']),
+                                                 item['pos'])
+                        if not item['posexact']:
+                            pos = 'about ' + pos
 
-                    mime = 'Detected MIME: %s (%s)' % res['mime'] \
-                        if res['mime'] else ''
-                    msg = 'After %s. %s' % (pos, mime)
+                        mime = 'Detected MIME: %s (%s)' % item['mime'] \
+                            if item['mime'] else 'Unknown MIME'
+                        msg.eppend('After %s: %s' % (pos, mime))
+                    msg = '; '.join(msg)
 
                     msgprefix = ('This file contains [[COM:CSD#F9|'
                                  'embedded data]]: ')
@@ -98,11 +101,12 @@ def run_worker():
 
 def overwrite(filepage, msg, msgprefix, res):
     try:
-        if (res['posexact'] and res['mime'] and
-                res['mime'][0] == filepage.latest_file_info.mime):
+        if all([item['posexact'] and item['mime'] and
+                item['mime'][0] == filepage.latest_file_info.mime
+                for item in res]):
             with tempfile.NamedTemporaryFile() as tmp:
                 urllib.urlretrieve(filepage.fileUrl(), tmp.name)
-                tmp.truncate(res['pos'])
+                tmp.truncate(res[0]['pos'])
                 filepage.upload(tmp.name,
                                 comment=msgprefix+msg,
                                 ignore_warnings=True)
@@ -113,10 +117,9 @@ def overwrite(filepage, msg, msgprefix, res):
 
 def delete(filepage, msg, msgprefix, res):
     try:
-        if not (res['posexact'] and res['mime'] and
-                res['mime'][0] in ['application/x-rar',
-                                   'application/zip',
-                                   'application/x-7z-compressed']):
+        if not any([item['posexact'] and item['mime'] and
+                    item['mime'][0] in ARCHIVE_TYPES
+                    for item in res]):
                 return
 
         afquery = filepage.site._simple_request(
