@@ -66,6 +66,8 @@ class ParserDetector(object):
                     self.parse_xcf(f)
                 elif parsetype == 'tiff':
                     self.parse_tiff(f)
+                elif parsetype == 'png':
+                    self.parse_png(f)
                 else:
                     raise RuntimeError('Wrong parsetype!')
             except (FileCorrupted, ValueError, TypeError):
@@ -555,3 +557,31 @@ class ParserDetector(object):
                 break
             else:
                 update()
+
+    def parse_png(self, f):
+        # Based on http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html
+        if f.read(8) != '\x89\x50\x4e\x47\x0d\x0a\x1a\x0a':
+            raise FileCorrupted
+
+        first = True
+        while True:
+            length, = struct.unpack('>L', f.read(4))
+            chunk_type = f.read(4)
+            # print chunk_type
+
+            if first and chunk_type != 'IHDR':
+                raise FileCorrupted
+            first = False
+
+            pos = f.tell()
+            f.seek(length, os.SEEK_CUR)
+            if f.tell() != pos + length:
+                raise FileCorrupted(length)
+
+            # crc
+            f.read(4)
+
+            self.lastgoodpos = f.tell()
+
+            if chunk_type == 'IEND':
+                break
