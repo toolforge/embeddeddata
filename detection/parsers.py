@@ -19,7 +19,6 @@ from __future__ import absolute_import
 
 import os
 import chunk
-import math
 import struct
 import xml.etree.ElementTree as ET
 
@@ -61,7 +60,7 @@ class ParserDetector(object):
                 elif parsetype in ['vnd.djvu', 'djvu']:
                     self.parse_djvu(f)
                 elif parsetype == 'webp':
-                    self.parse_riff(f)
+                    self.parse_webp(f)
                 elif parsetype in ['x-xcf', 'xcf']:
                     self.parse_xcf(f)
                 elif parsetype == 'tiff':
@@ -77,6 +76,22 @@ class ParserDetector(object):
                 pass
 
             return self.lastgoodpos, True
+
+    def read_chunk(self, f, expect_names=(), bigendian=True, align=False):
+        c = chunk.Chunk(f, align=align, bigendian=bigendian)
+
+        if expect_names and c.getname() not in expect_names:
+            raise FileCorrupted
+
+        expectpos = f.tell() + c.getsize()
+
+        c.close()
+        if f.tell() == expectpos:
+            self.lastgoodpos = f.tell()
+        else:
+            raise FileCorrupted
+
+        return c.getname()
 
     def parse_ogg(self, f):
         # Based on https://www.xiph.org/ogg/doc/framing.html
@@ -271,25 +286,15 @@ class ParserDetector(object):
             parse(0)
 
     def parse_djvu(self, f):
-        if not f.read(4) == 'AT&T':
+        if f.read(4) != 'AT&T':
             raise FileCorrupted
 
-        c = chunk.Chunk(f, align=False)
-        if not c.getname() == 'FORM':
-            raise FileCorrupted
+        self.read_chunk(f, expect_names=['FORM'])
 
-        c.close()
-        self.lastgoodpos = f.tell()
-
-    def parse_riff(self, f):
+    def parse_webp(self, f):
         # Based on https://developers.google.com/speed/webp/docs/riff_container
         # Quick and Dirty
-        if not f.read(4) == 'RIFF':
-            raise FileCorrupted
-
-        lenfile, = struct.unpack('<L', f.read(4))
-        f.seek(lenfile, os.SEEK_CUR)
-        self.lastgoodpos = f.tell()
+        self.read_chunk(f, expect_names=['RIFF'], bigendian=False)
 
     def parse_xcf(self, f):
         # Based on http://henning.makholm.net/xcftools/xcfspec-saved
@@ -590,16 +595,7 @@ class ParserDetector(object):
 
     def parse_midi(self, f):
         # Based on http://www.ccarh.org/courses/253/handout/smf/
+
+        self.read_chunk(f, expect_names=['MThd'])
         while True:
-            chunk_id = f.read(4)
-            if chunk_id not in ['MThd', 'MTrk']:
-                raise FileCorrupted
-
-            length, = struct.unpack('>L', f.read(4))
-
-            pos = f.tell()
-            f.seek(length, os.SEEK_CUR)
-            if f.tell() != pos + length:
-                raise FileCorrupted(length)
-
-            self.lastgoodpos = f.tell()
+            self.read_chunk(f, expect_names=['MTrk'])

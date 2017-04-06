@@ -54,6 +54,7 @@ class FileProxy(object):
         self._maxseek = max(self.tell(), self._maxseek)
 
     def read(self, size=-1):
+        # print 'read', size
         ret = ''
         if size < 0:
             while True:
@@ -94,6 +95,7 @@ class FileProxy(object):
         return ret
 
     def seek(self, offset, whence=os.SEEK_SET):
+        # print 'seek', offset, whence
         if whence == os.SEEK_SET:
             self.__pos = offset
         elif whence == os.SEEK_CUR:
@@ -104,6 +106,7 @@ class FileProxy(object):
         self.__update()
 
     def tell(self):
+        # print 'tell', self.__pos
         return self.__pos
 
     def close(self):
