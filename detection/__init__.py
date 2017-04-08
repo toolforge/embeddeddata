@@ -26,7 +26,7 @@ import pywikibot
 from detection.ffmpeg import remux_detect as ffmpeg_detector
 from detection.pillow import detect as pillow_detector
 from detection.wave import detect as wave_detector
-from detection.marker import find_marker, last_nonnull
+from detection.marker import find_marker, seek_trailers
 from detection.parsers import ParserDetector
 
 UNKNOWN_TYPES = ['application/octet-stream', 'text/plain']
@@ -45,6 +45,8 @@ def filetype(path, mime=True):
 
 
 def detect(f):
+    trailers = ['\x00', '\x20', '\r', '\n', '\r\n']
+
     size = os.path.getsize(f)
 
     major, minor = filetype(f).split('/')
@@ -77,8 +79,7 @@ def detect(f):
         # find the cross-reference table and certain special objects.
         # Conforming readers should read a PDF file from its end. The last
         # line of the file shall contain only the end-of-file marker, %%EOF.
-        detector = find_marker(
-            ['%%EOF', '%%EOF\n', '%%EOF\r\n', '%%EOF\r'], cont=True)
+        detector = find_marker(['%%EOF'], cont=True)
     elif minor in ['svg+xml', 'svg', 'xml']:
         # The closing xml tag of svg files
         detector = find_marker([
@@ -110,7 +111,12 @@ def detect(f):
         pywikibot.warning('FIXME: Failed detection')
         return
 
-    # Split and analyse
+    if minor in ['jpg', 'jpeg']:
+        trailers.append('\xff\xd9')
+
+    pos = seek_trailers(f, pos, trailers)
+
+    # Split and analyze
     chunk_size = 1 << 20
 
     mime = None
@@ -137,12 +143,6 @@ def detect(f):
                 return
 
             ret = detect(tmp.name) or []
-
-    # Analyse possible null padding
-    pos_null = last_nonnull(f)[0]
-    if abs(pos - pos_null) < 16:
-        pywikibot.warning('Null padded')
-        return
 
     return [{
         'pos': pos,

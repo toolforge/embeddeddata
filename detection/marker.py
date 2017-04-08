@@ -31,7 +31,7 @@ def search(search, substr, back=True, reverse=False):
     return ret
 
 
-def find_marker(markers, cont=False):
+def find_marker(markers, startpos=0, cont=False):
     def detect(f):
         readpos = 0
         chunks = ('', '')
@@ -61,25 +61,39 @@ def find_marker(markers, cont=False):
 
     return detect
 
-def last_nonnull(f):
-    readpos = 0
-    lastpos = None
+
+def seek_trailers(f, pos, trailers):
+    if not trailers:
+        return pos
+
+    trailers.sort(key=lambda i: len(i), reverse=True)
     try:
+        curtrailer = None
         with FileProxy(open(f, 'rb'), track=False) as f:
+            f.seek(pos)
+            testdata = f.read(len(trailers[0]))
+            for trailer in trailers:
+                if testdata.startswith(trailer):
+                    curtrailer = trailer
+                    break
+            else:
+                return pos
+
+            size = max(CHUNK_SIZE//len(curtrailer), 1) * len(curtrailer)
+            f.seek(pos)
             while True:
-                r = f.read(CHUNK_SIZE)
+                r = f.read(size)
 
-                stripped = r.rstrip('\x00')
-                if stripped:
-                    lastpos = readpos + len(stripped)
-
-                readpos += len(r)
+                for i in range(0, len(r), len(curtrailer)):
+                    if r[i:i+len(curtrailer)] == curtrailer:
+                        pos += len(curtrailer)
+                    else:
+                        return pos
 
                 if not r:
-                    break
+                    return pos
 
-        if lastpos:
-            return lastpos, True
+        return pos
     except Exception:
         traceback.print_exc()
-        return
+        return pos
