@@ -32,7 +32,8 @@ from detection.parsers import ParserDetector
 UNKNOWN_TYPES = ['application/octet-stream', 'text/plain']
 ARCHIVE_TYPES = ['application/x-rar',
                  'application/zip',
-                 'application/x-7z-compressed']
+                 'application/x-7z-compressed',
+                 'application/x-freearc']
 
 
 def filetype(path, mime=True):
