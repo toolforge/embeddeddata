@@ -130,8 +130,6 @@ def delete(filepage, msg, msgprefix, res):
         if not afquery.submit()['query']['abuselog']:
             return
 
-        # T155740 workaround
-        filepage.latest_file_info
         if len(filepage.get_file_history()) != 1:
             return
 

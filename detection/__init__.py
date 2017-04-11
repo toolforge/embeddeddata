@@ -23,7 +23,7 @@ import tempfile
 
 import pywikibot
 
-from detection.ffmpeg import remux_detect as ffmpeg_detector
+from detection.ffmpeg import strace_detect as ffmpeg_detector
 from detection.pillow import detect as pillow_detector
 from detection.wave import detect as wave_detector
 from detection.marker import find_marker, seek_trailers
