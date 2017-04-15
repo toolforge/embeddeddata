@@ -25,6 +25,7 @@ from detection.by_magic import register_detector, FileCorrupted
 
 @register_detector('\x52\x61\x72\x21\x1A\x07\x01\x00')
 def rar_v5(f):
+    # based on http://www.rarlab.com/technote.htm
     def vint():
         r = 0
         i = 0
@@ -58,6 +59,7 @@ def rar_v5(f):
 @register_detector('\x52\x61\x72\x21\x1A\x07\x00')
 def rar_v4(f):
     # based on http://www.forensicswiki.org/wiki/RAR
+    # and http://acritum.com/winrar/rar-format
     while True:
         pos = f.tell()
         crc, typ, flags, size = struct.unpack('<HBHH', f.read(7))

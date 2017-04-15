@@ -104,7 +104,7 @@ def detect(f):
 
             # search for magic
             for startpos in find_startpos(f, magic):
-                print startpos
+                # print detector, magic, startpos
                 f.seek(startpos)
                 try:
                     out = detector(f)
