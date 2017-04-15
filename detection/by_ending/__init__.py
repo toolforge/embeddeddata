@@ -129,7 +129,7 @@ def detect(f):
 
                 if pos > 0.8 * size:
                     return
-                if minor == 'jpeg' and pos > 0.5:
+                if minor == 'jpeg' and pos > 0.5 * size:
                     return
             elif size - pos < 512:
                 return
