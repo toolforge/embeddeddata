@@ -26,7 +26,8 @@ import pywikibot
 from redis import Redis
 
 from config import REDIS_KEY
-from detection import detect, ARCHIVE_TYPES
+from detection import detect
+from detection.by_ending import ARCHIVE_TYPES
 
 
 def sizeof_fmt(num, suffix='B'):
