@@ -17,136 +17,27 @@
 
 from __future__ import absolute_import
 
-import os
-import subprocess
-import tempfile
+import collections
 
-import pywikibot
-
-from detection.ffmpeg import strace_detect as ffmpeg_detector
-from detection.pillow import detect as pillow_detector
-from detection.wave import detect as wave_detector
-from detection.marker import find_marker, seek_trailers
-from detection.parsers import ParserDetector
-
-UNKNOWN_TYPES = ['application/octet-stream', 'text/plain']
-ARCHIVE_TYPES = ['application/x-rar',
-                 'application/zip',
-                 'application/x-7z-compressed',
-                 'application/x-freearc']
-
-
-def filetype(path, mime=True):
-    args = ['file', path, '-b']
-    if mime:
-        # not '-i' because we don't need '; charset=binary'
-        args.append('--mime-type')
-
-    return subprocess.check_output(args).strip()
+from detection.by_ending import detect as ending_detect
+from detection.by_magic import detect as magic_detect
 
 
 def detect(f):
-    trailers = ['\x00', '\x20', '\r', '\n', '\r\n']
-
-    size = os.path.getsize(f)
-
-    major, minor = filetype(f).split('/')
-
-    detector = None
-    if minor in [
-        'jpg', 'jpeg',
-        'gif'
-    ]:
-        detector = pillow_detector
-    elif minor in ['x-flac', 'flac']:
-        detector = ffmpeg_detector
-    elif minor in [
-        'ogg',
-        'webm',
-        'vnd.djvu', 'djvu',
-        'webp',
-        'x-xcf', 'xcf',
-        'tiff',
-        'png',
-        'midi', 'mid',
-    ]:
-        detector = lambda f: ParserDetector(f).parse(minor)
-    elif minor in ['x-wav', 'wav']:
-        detector = wave_detector
-    elif minor == 'pdf':
-        # ISO 32000-1:2008
-        # 7.5.5. File Trailer
-        # The trailer of a PDF file enables a conforming reader to quickly
-        # find the cross-reference table and certain special objects.
-        # Conforming readers should read a PDF file from its end. The last
-        # line of the file shall contain only the end-of-file marker, %%EOF.
-        detector = find_marker(['%%EOF'], cont=True)
-    elif minor in ['svg+xml', 'svg', 'xml']:
-        # The closing xml tag of svg files
-        detector = find_marker([
-            '</svg>', '</svg>\n', '</svg>\r\n', '</svg>\r',
-            '</SVG>', '</SVG>\n', '</SVG>\r\n', '</SVG>\r',
-        ])
-    elif minor in [typ.split('/')[1] for typ in ARCHIVE_TYPES]:
-        # Recursed archival formats
-        return
-    elif minor in [typ.split('/')[1] for typ in UNKNOWN_TYPES]:
-        # Recursed unknown formats
-        return
-    else:
-        pywikibot.warning('FIXME: Unexpected mime: ' + filetype(f))
-        return
-    if not detector:
-        pywikibot.warning('FIXME: Unsupported mime: ' + filetype(f))
-        return
-
-    detection = detector(f)
-    if not detection:
-        pywikibot.warning('FIXME: Failed detection')
-        return
-
-    pos, posexact = detection
-    if pos == size:
-        return
-    elif not pos:
-        pywikibot.warning('FIXME: Failed detection')
-        return
-
-    if minor in ['jpg', 'jpeg']:
-        trailers.append('\xff\xd9')
-
-    pos = seek_trailers(f, pos, trailers)
-
-    # Split and analyze
-    chunk_size = 1 << 20
-
-    mime = None
-    with open(f, 'rb') as fin:
-        with tempfile.NamedTemporaryFile() as tmp:
-            fin.seek(pos)
-            while True:
-                read = fin.read(chunk_size)
-                if not read:
-                    break
-                tmp.write(read)
-
-            tmp.flush()
-            # __import__('shutil').copyfile(tmp.name, '/tmp/test')
-            mime = filetype(tmp.name), filetype(tmp.name, False)
-            if mime[0] in UNKNOWN_TYPES:
-                mime = None
-
-                if pos > 0.8 * size:
-                    return
-                if minor == 'jpeg' and pos > 0.5:
-                    return
-            elif size - pos < 512:
-                return
-
-            ret = detect(tmp.name) or []
-
-    return [{
-        'pos': pos,
-        'posexact': posexact,
-        'mime': mime
-    }] + ret
+    ret = collections.defaultdict(lambda: {
+        'posexact': False,
+        'via': [],
+        'mime': ('?/?', '?')
+    })
+    for item in ending_detect(f):
+        ret[item['pos']]['pos'] = item['pos']
+        ret[item['pos']]['posexact'] |= item['posexact']
+        ret[item['pos']]['via'].append('Ending')
+        ret[item['pos']]['mime'] = item['mime']
+    for item in magic_detect(f):
+        ret[item['pos']]['pos'] = item['pos']
+        ret[item['pos']]['posexact'] = True
+        ret[item['pos']]['via'].append('Magic')
+        ret[item['pos']]['mime'] = item['mime']
+    return collections.OrderedDict(
+        sorted(ret.items(), key=lambda (k, v): k)).values()

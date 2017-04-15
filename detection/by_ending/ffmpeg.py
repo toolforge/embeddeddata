@@ -57,7 +57,7 @@ def remux_detect(f):
 
 
 def strace_detect(f):
-    from detection.utils import SyscallTracer
+    from detection.by_ending.utils import SyscallTracer
 
     # matroska supports (almost?) all codecs
     f = os.path.abspath(f)
