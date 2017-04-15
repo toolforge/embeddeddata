@@ -115,12 +115,12 @@ def detect(f):
 
                 endpos = f.last_good_pos
                 if not out or endpos is None:
-                    pywikibot.warn('Really corrupted file?!')
+                    pywikibot.warning('Really corrupted file?!')
                     continue
 
                 size = endpos - startpos
                 if out is not Ellipsis and size < 128:
-                    pywikibot.warn('Very small file?!')
+                    pywikibot.warning('Very small file?!')
                     continue
 
                 with tempfile.NamedTemporaryFile() as tmp:
