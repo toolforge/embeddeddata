@@ -84,6 +84,7 @@ def find_startpos(f, magic):
             chunks = chunks[1], r
 
             for pos in findall(''.join(chunks), magic):
+                pos += readpos
                 if pos not in poss:
                     yield pos
                     poss.add(pos)
