@@ -29,12 +29,12 @@ def detect(f):
         'via': [],
         'mime': ('?/?', '?')
     })
-    for item in ending_detect(f):
+    for item in ending_detect(f) or []:
         ret[item['pos']]['pos'] = item['pos']
         ret[item['pos']]['posexact'] |= item['posexact']
         ret[item['pos']]['via'].append('Ending')
         ret[item['pos']]['mime'] = item['mime']
-    for item in magic_detect(f):
+    for item in magic_detect(f) or []:
         ret[item['pos']]['pos'] = item['pos']
         ret[item['pos']]['posexact'] = True
         ret[item['pos']]['via'].append('Magic')
