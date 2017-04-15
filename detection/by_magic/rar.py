@@ -37,12 +37,13 @@ def rar_v5(f):
             if not cont:
                 return r
 
+    f.seek(8, os.SEEK_CUR)  # seek after magic
     while True:
         crc, = struct.unpack('<L', f.read(4))
         head_size = vint()
         pos = f.tell()
         typ, flags = vint(), vint()
-        if typ not in [1, 2, 3, 4, 5]:
+        if typ not in [1, 2, 3, 4, 5, 7]:
             raise FileCorrupted
         extra_area_size = vint() if flags & 0x0001 else 0
         data_size = vint() if flags & 0x0002 else 0
@@ -53,7 +54,10 @@ def rar_v5(f):
 
         if typ == 5:
             break
-    return
+        elif typ == 4:
+            return Ellipsis  # encrypted, assume bad faith
+
+    return True
 
 
 @register_detector('\x52\x61\x72\x21\x1A\x07\x00')
