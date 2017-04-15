@@ -135,6 +135,8 @@ def detect(f):
                 return
 
             ret = detect(tmp.name) or []
+            for item in ret:
+                item['pos'] += pos
 
     return [{
         'pos': pos,
