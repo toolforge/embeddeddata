@@ -105,7 +105,7 @@ def run_worker():
 def overwrite(filepage, msg, msgprefix, res):
     try:
         if all([item['posexact'] and item['mime'] and
-                item['mime'][0] == filepage.latest_file_info.mime and
+                item['mime'][0] == filepage.latest_file_info.mime
                 for item in res]):
             with tempfile.NamedTemporaryFile() as tmp:
                 urllib.urlretrieve(filepage.fileUrl(), tmp.name)
@@ -121,7 +121,7 @@ def overwrite(filepage, msg, msgprefix, res):
 def delete(filepage, msg, msgprefix, res):
     try:
         if not any([item['posexact'] and item['mime'] and
-                    item['mime'][0] in ARCHIVE_TYPES and
+                    item['mime'][0] in ARCHIVE_TYPES
                     for item in res]):
                 return
 
