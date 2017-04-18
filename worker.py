@@ -106,7 +106,6 @@ def overwrite(filepage, msg, msgprefix, res):
     try:
         if all([item['posexact'] and item['mime'] and
                 item['mime'][0] == filepage.latest_file_info.mime and
-                'Magic' not in item['via']  # Magic is evil
                 for item in res]):
             with tempfile.NamedTemporaryFile() as tmp:
                 urllib.urlretrieve(filepage.fileUrl(), tmp.name)
@@ -123,7 +122,6 @@ def delete(filepage, msg, msgprefix, res):
     try:
         if not any([item['posexact'] and item['mime'] and
                     item['mime'][0] in ARCHIVE_TYPES and
-                    'Ending' in item['via']
                     for item in res]):
                 return
 
