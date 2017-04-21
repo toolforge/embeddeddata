@@ -63,7 +63,8 @@ def run_worker():
 
             # Download
             try:
-                urllib.urlretrieve(filepage.fileUrl(), path)
+                if not filepage.download(path):
+                    pywikibot.warning('FIXME: Possibly corrupted download')
 
                 res = detect(path)
                 if res:

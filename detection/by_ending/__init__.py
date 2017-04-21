@@ -108,6 +108,8 @@ def detect(f):
         trailers.append('\xff\xd9')
 
     pos = seek_trailers(f, pos, trailers)
+    if pos == size:
+        return
 
     # Split and analyze
     chunk_size = 1 << 20
