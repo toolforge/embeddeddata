@@ -33,7 +33,8 @@ UNKNOWN_TYPES = ['application/octet-stream', 'text/plain']
 ARCHIVE_TYPES = ['application/x-rar',
                  'application/zip',
                  'application/x-7z-compressed',
-                 'application/x-freearc']
+                 'application/x-freearc',
+                 'application/vnd.ms-cab-compressed']
 
 
 def detect(f):
