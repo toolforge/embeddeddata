@@ -63,8 +63,14 @@ def run_worker():
 
             # Download
             try:
-                if not filepage.download(path):
-                    pywikibot.warning('FIXME: Possibly corrupted download')
+                for i in range(8):
+                    if filepage.download(path):
+                        break
+                    else:
+                        pywikibot.warning(
+                            'Possibly corrupted download on attempt %d' % i)
+                else:
+                    pywikibot.warning('FIXME: Download attempt exhausted')
 
                 res = detect(path)
                 if res:
