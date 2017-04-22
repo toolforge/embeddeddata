@@ -56,7 +56,7 @@ class ParserDetector(object):
                 # elif parsetype == 'flac':
                 #     self.parse_flac(f)
                 elif parsetype == 'webm':
-                    self.parse_ebml(f, matroska_spec)
+                    self.parse_ebml(f, matroska_spec, 2)
                 elif parsetype in ['vnd.djvu', 'djvu']:
                     self.parse_djvu(f)
                 elif parsetype == 'webp':
@@ -99,7 +99,10 @@ class ParserDetector(object):
         # A page
         while True:
             # Capture pattern
-            if not f.read(4) == 'OggS':
+            capture = f.read(4)
+            if not capture:
+                break
+            elif capture != 'OggS':
                 raise FileCorrupted
             # Version
             if not f.read(1) == '\x00':
@@ -224,7 +227,7 @@ class ParserDetector(object):
     #
     #         break
 
-    def parse_ebml(self, f, spec):
+    def parse_ebml(self, f, spec, n):
         # Based on http://matroska-org.github.io/libebml/specs.html
 
         def seperate(maxsize, includelead):
@@ -282,7 +285,7 @@ class ParserDetector(object):
             if lvl == 0 and nodetype['name'] != '?':
                 self.lastgoodpos = f.tell()
 
-        while True:
+        for i in range(n):
             parse(0)
 
     def parse_djvu(self, f):
