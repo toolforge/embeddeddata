@@ -53,6 +53,19 @@ def run_worker():
             if not filepage.exists():
                 continue
 
+            for i in range(8):
+                try:
+                    filepage.get_file_history()
+                except pywikibot.exceptions.PageRelatedError as e:
+                    # pywikibot.exceptions.PageRelatedError:
+                    # loadimageinfo: Query on ... returned no imageinfo
+                    pywikibot.exception(e)
+                    site.throttle()
+                else:
+                    break
+            else:
+                raise
+
             if pywikibot.User(site, filepage.latest_file_info.user).editCount(
                     force=True) > 200:
                 continue
@@ -64,11 +77,17 @@ def run_worker():
             # Download
             try:
                 for i in range(8):
-                    if filepage.download(path):
+                    try:
+                        success = filepage.download(path)
+                    except Exception as e:
+                        pywikibot.exception(e)
+                        success = False
+                    if success:
                         break
                     else:
                         pywikibot.warning(
                             'Possibly corrupted download on attempt %d' % i)
+                        site.throttle()
                 else:
                     pywikibot.warning('FIXME: Download attempt exhausted')
 
