@@ -171,9 +171,9 @@ def delete(filepage, msg, msgprefix, res):
 
 def add_speedy(filepage, msg, msgprefix, res):
     try:
-        filepage.text = '{{embedded data|suspect=1|1=%s}}\n' % msg + \
-                        filepage.text
-        filepage.save('Bot: Adding {{[[Template:Embedded data|'
+        # Make sure no edit conflicts happen here
+        filepage.save(prependtext='{{embedded data|suspect=1|1=%s}}\n' % msg,
+                      summary='Bot: Adding {{[[Template:Embedded data|'
                       'embedded data]]}} to this embedded data suspect.')
         return True
     except Exception:
