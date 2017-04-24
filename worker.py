@@ -151,14 +151,6 @@ def delete(filepage, msg, msgprefix, res):
                     for item in res]):
                 return
 
-        afquery = filepage.site._simple_request(
-            action='query',
-            list='abuselog',
-            aflfilter=166,
-            afltitle=filepage.title())
-        if not afquery.submit()['query']['abuselog']:
-            return
-
         if len(filepage.get_file_history()) != 1:
             return
 
