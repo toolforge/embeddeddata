@@ -27,7 +27,7 @@ from redis import Redis
 
 from config import REDIS_KEY
 from detection import detect
-from detection.by_ending import ARCHIVE_TYPES
+from detection.by_ending import ARCHIVE_TYPES, UNKNOWN_TYPES
 
 
 def sizeof_fmt(num, suffix='B'):
@@ -102,8 +102,10 @@ def run_worker():
                         if not item['posexact']:
                             pos = 'about ' + pos
 
-                        mime = 'Detected MIME: %s (%s)' % item['mime'] \
-                            if item['mime'] else 'Unknown MIME'
+                        if item['mime'][0] in UNKNOWN_TYPES:
+                            mime = 'Unidentified type (%s, %s)' % item['mime']
+                        else:
+                            mime = 'Identified type: %s (%s)' % item['mime']
                         msg.append('After %s: %s' % (pos, mime))
                     msg = '; '.join(msg)
 
@@ -130,7 +132,7 @@ def run_worker():
 
 def overwrite(filepage, msg, msgprefix, res):
     try:
-        if all([item['posexact'] and item['mime'] and
+        if all([item['posexact'] and
                 item['mime'][0] == filepage.latest_file_info.mime
                 for item in res]):
             with tempfile.NamedTemporaryFile() as tmp:
@@ -146,7 +148,7 @@ def overwrite(filepage, msg, msgprefix, res):
 
 def delete(filepage, msg, msgprefix, res):
     try:
-        if not any([item['posexact'] and item['mime'] and
+        if not any([item['posexact'] and
                     item['mime'][0] in ARCHIVE_TYPES
                     for item in res]):
                 return

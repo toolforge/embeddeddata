@@ -128,8 +128,6 @@ def detect(f):
             # __import__('shutil').copyfile(tmp.name, '/tmp/test')
             mime = filetype(tmp.name), filetype(tmp.name, False)
             if mime[0] in UNKNOWN_TYPES:
-                mime = None
-
                 if pos > 0.8 * size:
                     return
                 if minor == 'jpeg' and pos > 0.5 * size:
