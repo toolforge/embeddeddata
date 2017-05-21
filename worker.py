@@ -190,7 +190,7 @@ def revdel(filepage, revision, msg, msgprefix, res):
         hide='content',
         reason=msgprefix+msg,
         token=filepage.site.tokens['csrf']
-    )
+    ).submit()
 
 
 def add_speedy(filepage, revision, msg, msgprefix, res):
