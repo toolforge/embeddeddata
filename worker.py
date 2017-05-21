@@ -177,7 +177,7 @@ def delete(filepage, revision, msg, msgprefix, res):
 
 def revdel(filepage, revision, msg, msgprefix, res):
     assert filepage.get_file_history()[revision.timestamp]
-    del filepage._file_revisions
+    filepage._file_revisions.clear()
     revision = filepage.get_file_history()[revision.timestamp]
     assert revision.archivename and '!' in revision.archivename
 
