@@ -27,7 +27,7 @@ import tempfile
 
 
 def remux_detect(f):
-    from detection import filetype
+    from detection.utils import filetype
 
     f = os.path.abspath(f)
     mime = filetype(f)

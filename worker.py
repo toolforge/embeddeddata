@@ -18,6 +18,7 @@
 import os
 import shutil
 import tempfile
+import time
 import traceback
 import urllib
 import uuid
@@ -37,6 +38,12 @@ def sizeof_fmt(num, suffix='B'):
             return "%3.1f%s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
+def throttle():
+    TIME = 8
+    pywikibot.output('Throttle {} seconds'.format(TIME))
+    time.sleep(TIME)
 
 
 def run_worker():
@@ -60,13 +67,14 @@ def run_worker():
                     # pywikibot.exceptions.PageRelatedError:
                     # loadimageinfo: Query on ... returned no imageinfo
                     pywikibot.exception(e)
-                    site.throttle()
+                    throttle()
                 else:
                     break
             else:
                 raise
+            revision = filepage.latest_file_info
 
-            if pywikibot.User(site, filepage.latest_file_info.user).editCount(
+            if pywikibot.User(site, revision.user).editCount(
                     force=True) > 200:
                 continue
 
@@ -78,6 +86,7 @@ def run_worker():
             try:
                 for i in range(8):
                     try:
+                        # TODO: make sure doenloaded file is of `revision`
                         success = filepage.download(path)
                     except Exception as e:
                         pywikibot.exception(e)
@@ -87,7 +96,7 @@ def run_worker():
                     else:
                         pywikibot.warning(
                             'Possibly corrupted download on attempt %d' % i)
-                        site.throttle()
+                        throttle()
                 else:
                     pywikibot.warning('FIXME: Download attempt exhausted')
 
@@ -116,9 +125,7 @@ def run_worker():
                                      % filepage.title(asLink=True))
                     pywikibot.output(msg)
 
-                    for func in [overwrite, delete, add_speedy]:
-                        if func(filepage, msg, msgprefix, res):
-                            break
+                    execute_file(filepage, revision, msg, msgprefix, res)
 
             except Exception:
                 traceback.print_exc()
@@ -130,48 +137,66 @@ def run_worker():
         shutil.rmtree(tmpdir)
 
 
-def overwrite(filepage, msg, msgprefix, res):
-    try:
-        if all([item['posexact'] and
-                item['mime'][0] == filepage.latest_file_info.mime
-                for item in res]):
-            with tempfile.NamedTemporaryFile() as tmp:
-                urllib.urlretrieve(filepage.fileUrl(), tmp.name)
-                tmp.truncate(res[0]['pos'])
-                filepage.upload(tmp.name,
-                                comment=msgprefix+msg,
-                                ignore_warnings=True)
-                return True
-    except Exception:
-        traceback.print_exc()
+def execute_file(filepage, revision, msg, msgprefix, res):
+    if all([item['posexact'] and
+            item['mime'][0] == filepage.latest_file_info.mime
+            for item in res]):
+        overwrite(filepage, revision, msg, msgprefix, res)
+        return
+
+    if any([item['posexact'] and item['mime'][0] in ARCHIVE_TYPES
+            for item in res]):
+        if len(filepage.get_file_history()) == 1:
+            overwrite(filepage, revision, msg, msgprefix, res)
+            throttle()
+            try:
+                revdel(filepage, revision, msg, msgprefix, res)
+            except Exception:
+                add_speedy(filepage, revision, msg, msgprefix, res)
+        else:
+            add_speedy(filepage, revision, msg, msgprefix, res)
+            delete(filepage, revision, msg, msgprefix, res)
+        return
+
+    add_speedy(filepage, revision, msg, msgprefix, res)
 
 
-def delete(filepage, msg, msgprefix, res):
-    try:
-        if not any([item['posexact'] and
-                    item['mime'][0] in ARCHIVE_TYPES
-                    for item in res]):
-                return
-
-        if len(filepage.get_file_history()) != 1:
-            return
-
-        add_speedy(filepage, msg, msgprefix, res)
-        filepage.delete(msgprefix+msg, prompt=False)
-        return True
-    except Exception:
-        traceback.print_exc()
+def overwrite(filepage, revision, msg, msgprefix, res):
+    with tempfile.NamedTemporaryFile() as tmp:
+        urllib.urlretrieve(filepage.fileUrl(), tmp.name)
+        tmp.truncate(res[0]['pos'])
+        filepage.upload(tmp.name,
+                        comment=msgprefix+msg,
+                        ignore_warnings=True)
 
 
-def add_speedy(filepage, msg, msgprefix, res):
-    try:
-        # Make sure no edit conflicts happen here
-        filepage.save(prependtext='{{embedded data|suspect=1|1=%s}}\n' % msg,
-                      summary='Bot: Adding {{[[Template:Embedded data|'
-                      'embedded data]]}} to this embedded data suspect.')
-        return True
-    except Exception:
-        traceback.print_exc()
+def delete(filepage, revision, msg, msgprefix, res):
+    filepage.delete(msgprefix+msg, prompt=False)
+
+
+def revdel(filepage, revision, msg, msgprefix, res):
+    assert filepage.get_file_history()[revision.timestamp]
+    del filepage._file_revisions
+    revision = filepage.get_file_history()[revision.timestamp]
+    assert revision.archivename and '!' in revision.archivename
+
+    revid = revision.archivename.split('!')[0]
+    filepage.site._simple_request(
+        action='revisiondelete',
+        type='oldimage',
+        target=filepage.title(),
+        ids=revid,
+        hide='content',
+        reason=msgprefix+msg,
+        token=filepage.site.tokens['csrf']
+    )
+
+
+def add_speedy(filepage, revision, msg, msgprefix, res):
+    # Make sure no edit conflicts happen here
+    filepage.save(prependtext='{{embedded data|suspect=1|1=%s}}\n' % msg,
+                  summary='Bot: Adding {{[[Template:Embedded data|'
+                  'embedded data]]}} to this embedded data suspect.')
 
 
 def main():
