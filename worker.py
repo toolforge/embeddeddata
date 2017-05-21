@@ -155,6 +155,7 @@ def execute_file(filepage, revision, msg, msgprefix, res):
             try:
                 revdel(filepage, revision, msg, msgprefix, res)
             except Exception:
+                traceback.print_exc()
                 add_speedy(filepage, revision, msg, msgprefix, res)
         return
 
