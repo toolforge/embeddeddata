@@ -147,15 +147,15 @@ def execute_file(filepage, revision, msg, msgprefix, res):
     if any([item['posexact'] and item['mime'][0] in ARCHIVE_TYPES
             for item in res]):
         if len(filepage.get_file_history()) == 1:
+            add_speedy(filepage, revision, msg, msgprefix, res)
+            delete(filepage, revision, msg, msgprefix, res)
+        else:
             overwrite(filepage, revision, msg, msgprefix, res)
             throttle()
             try:
                 revdel(filepage, revision, msg, msgprefix, res)
             except Exception:
                 add_speedy(filepage, revision, msg, msgprefix, res)
-        else:
-            add_speedy(filepage, revision, msg, msgprefix, res)
-            delete(filepage, revision, msg, msgprefix, res)
         return
 
     add_speedy(filepage, revision, msg, msgprefix, res)
