@@ -71,7 +71,7 @@ class ParserDetector(object):
                     self.parse_midi(f)
                 else:
                     raise RuntimeError('Wrong parsetype!')
-            except (FileCorrupted, ValueError, TypeError):
+            except (FileCorrupted, ValueError, TypeError, struct.error):
                 __import__('traceback').print_exc()
                 pass
 

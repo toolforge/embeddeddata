@@ -18,6 +18,7 @@
 from __future__ import absolute_import
 
 import os
+import struct
 import tempfile
 import traceback
 
@@ -109,7 +110,7 @@ def detect(f):
                 f.seek(startpos)
                 try:
                     out = detector(f)
-                except (FileCorrupted, ValueError, TypeError):
+                except (FileCorrupted, ValueError, TypeError, struct.error):
                     traceback.print_exc()
                     out = True
 
