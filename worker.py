@@ -15,6 +15,7 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+import json
 import os
 import shutil
 import tempfile
@@ -54,8 +55,9 @@ def run_worker():
         redis = Redis(host="tools-redis")
 
         while True:
-            _, title = redis.blpop(REDIS_KEY)
-            filepage = pywikibot.FilePage(site, title.decode('utf-8'))
+            _, change = redis.blpop(REDIS_KEY)
+            change = json.loads(change)
+            filepage = pywikibot.FilePage(site, change['title'])
 
             if not filepage.exists():
                 continue
@@ -72,13 +74,28 @@ def run_worker():
                     break
             else:
                 raise
-            revision = filepage.latest_file_info
+
+            try:
+                revision = filepage.get_file_history()[
+                    pywikibot.Timestamp.fromtimestampformat(
+                        change['log_params']['img_timestamp'])]
+            except KeyError:
+                try:
+                    revision = filepage.get_file_history()[
+                        pywikibot.Timestamp.fromtimestamp(
+                            change['timestamp'])]
+                except KeyError:
+                    revision = filepage.latest_file_info
+                    pywikibot.warning(
+                        'Cannot fetch specified revision, falling back to '
+                        'latest revision.')
 
             if pywikibot.User(site, revision.user).editCount(
                     force=True) > 200:
                 continue
 
-            pywikibot.output('Working on: %s' % title)
+            pywikibot.output('Working on: %s at %s' % (change['title'],
+                                                       revision.timestamp))
 
             path = os.path.join(tmpdir, str(uuid.uuid1()))
 

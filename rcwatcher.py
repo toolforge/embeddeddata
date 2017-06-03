@@ -15,6 +15,7 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+import json
 import signal
 
 from redis import Redis
@@ -51,7 +52,7 @@ def run_watcher():
                 change['namespace'] == 6 and \
                 change['type'] == 'log' and \
                 change['log_type'] == 'upload':
-            redis.rpush(REDIS_KEY, change['title'])
+            redis.rpush(REDIS_KEY, json.dumps(change))
 
     pywikibot.output("Exit - THIS SHOULD NOT HAPPEN")
 
