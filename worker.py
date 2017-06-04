@@ -48,35 +48,6 @@ def throttle():
     time.sleep(TIME)
 
 
-# Forked from pywikibot due to T166939
-def download(page, filename=None, chunk_size=100 * 1024, revision=None):
-    from pywikibot.comms import http
-    from pywikibot.tools import compute_file_hash
-
-    if filename is None:
-        filename = page.title(as_filename=True, withNamespace=False)
-
-    filename = os.path.expanduser(filename)
-
-    if revision is None:
-        revision = page.latest_file_info
-
-    req = http.fetch(revision.url, stream=True)
-    if req.status == 200:
-        try:
-            with open(filename, 'wb') as f:
-                for chunk in req.data.iter_content(chunk_size):
-                    f.write(chunk)
-        except IOError as e:
-            raise e
-
-        sha1 = compute_file_hash(filename)
-        return sha1 == revision.sha1
-    else:
-        pywikibot.warning('Unsuccesfull request (%s): %s' % (req.status, req.uri))
-        return False
-
-
 def run_worker():
     try:
         tmpdir = tempfile.mkdtemp()
@@ -133,10 +104,7 @@ def run_worker():
             try:
                 for i in range(8):
                     try:
-                        # TODO: make sure doenloaded file is of `revision`
-                        # success = filepage.download(path)
-                        success = download(
-                            filepage, filename=path, revision=revision)
+                        success = filepage.download(path, revision=revision)
                     except Exception as e:
                         pywikibot.exception(e)
                         success = False
