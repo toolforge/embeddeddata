@@ -19,7 +19,6 @@ import json
 import os
 import shutil
 import tempfile
-import time
 import traceback
 import urllib
 import uuid
@@ -34,10 +33,6 @@ from detection import detect
 from detection.by_ending import ARCHIVE_TYPES, UNKNOWN_TYPES
 
 
-site = pywikibot.Site(user="Embedded Data Bot")
-site._throttle = Throttle(site, multiplydelay=False)
-
-
 def sizeof_fmt(num, suffix='B'):
     # Source: http://stackoverflow.com/a/1094933
     for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
@@ -47,14 +42,12 @@ def sizeof_fmt(num, suffix='B'):
     return "%.1f%s%s" % (num, 'Yi', suffix)
 
 
-def throttle():
-    site.throttle(write=True)
-
-
 def run_worker():
     try:
         tmpdir = tempfile.mkdtemp()
 
+        site = pywikibot.Site(user="Embedded Data Bot")
+        site._throttle = Throttle(site, multiplydelay=False)
         redis = Redis(host="tools-redis")
 
         while True:
@@ -72,7 +65,7 @@ def run_worker():
                     # pywikibot.exceptions.PageRelatedError:
                     # loadimageinfo: Query on ... returned no imageinfo
                     pywikibot.exception(e)
-                    throttle()
+                    site.throttle(write=True)
                 else:
                     break
             else:
@@ -115,7 +108,7 @@ def run_worker():
                     else:
                         pywikibot.warning(
                             'Possibly corrupted download on attempt %d' % i)
-                        throttle()
+                        site.throttle(write=True)
                 else:
                     pywikibot.warning('FIXME: Download attempt exhausted')
 
@@ -225,7 +218,7 @@ def revdel(filepage, revision, msg, msgprefix, res):
         except (KeyError, AssertionError):
             pywikibot.warning(
                 'Failed to load new revision history on attempt %d' % i)
-            throttle()
+            filepage.site.throttle(write=True)
         else:
             break
     else:
