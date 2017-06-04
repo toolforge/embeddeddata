@@ -26,11 +26,16 @@ import uuid
 
 import pywikibot
 from pywikibot.data.api import APIError
+from pywikibot.throttle import Throttle
 from redis import Redis
 
 from config import REDIS_KEY
 from detection import detect
 from detection.by_ending import ARCHIVE_TYPES, UNKNOWN_TYPES
+
+
+site = pywikibot.Site(user="Embedded Data Bot")
+site._throttle = Throttle(site, multiplydelay=False)
 
 
 def sizeof_fmt(num, suffix='B'):
@@ -43,16 +48,13 @@ def sizeof_fmt(num, suffix='B'):
 
 
 def throttle():
-    TIME = 1
-    pywikibot.output('Throttle {} seconds'.format(TIME))
-    time.sleep(TIME)
+    site.throttle(write=True)
 
 
 def run_worker():
     try:
         tmpdir = tempfile.mkdtemp()
 
-        site = pywikibot.Site(user="Embedded Data Bot")
         redis = Redis(host="tools-redis")
 
         while True:
