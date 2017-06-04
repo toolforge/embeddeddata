@@ -20,7 +20,6 @@ import os
 import shutil
 import tempfile
 import traceback
-import urllib
 import uuid
 
 import pywikibot
@@ -31,6 +30,10 @@ from redis import Redis
 from config import REDIS_KEY
 from detection import detect
 from detection.by_ending import ARCHIVE_TYPES, UNKNOWN_TYPES
+
+
+MESSAGE_PREFIX = ('This file contains [[COM:CSD#F9|'
+                  'embedded data]]: ')
 
 
 def sizeof_fmt(num, suffix='B'):
@@ -130,14 +133,11 @@ def run_worker():
                         msg.append('After %s: %s' % (pos, mime))
                     msg = '; '.join(msg)
 
-                    msgprefix = ('This file contains [[COM:CSD#F9|'
-                                 'embedded data]]: ')
-
                     pywikibot.output(u"\n\n>>> %s <<<"
                                      % filepage.title(asLink=True))
                     pywikibot.output(msg)
 
-                    execute_file(filepage, revision, msg, msgprefix, res)
+                    execute_file(filepage, revision, msg, res, path)
 
             except Exception:
                 traceback.print_exc()
@@ -149,28 +149,28 @@ def run_worker():
         shutil.rmtree(tmpdir)
 
 
-def execute_file(filepage, revision, msg, msgprefix, res):
+def execute_file(filepage, revision, msg, res, path):
     if all([item['posexact'] and
             item['mime'][0] == filepage.latest_file_info.mime
             for item in res]):
-        overwrite(filepage, revision, msg, msgprefix, res)
+        overwrite(filepage, msg, res, path)
         return
 
     if any([item['posexact'] and item['mime'][0] in ARCHIVE_TYPES
             for item in res]):
         if len(filepage.get_file_history()) == 1:
-            add_speedy(filepage, revision, msg, msgprefix, res)
-            delete(filepage, revision, msg, msgprefix, res)
+            add_speedy(filepage, msg)
+            delete(filepage, msg)
         else:
-            overwrite(filepage, revision, msg, msgprefix, res)
+            overwrite(filepage, msg, res, path)
             try:
-                revdel(filepage, revision, msg, msgprefix, res)
+                revdel(filepage, revision, msg)
             except Exception:
                 traceback.print_exc()
-                add_speedy(filepage, revision, msg, msgprefix, res)
+                add_speedy(filepage, msg)
         return
 
-    add_speedy(filepage, revision, msg, msgprefix, res)
+    add_speedy(filepage, msg)
 
 
 def retry_apierror(f):
@@ -188,26 +188,28 @@ def retry_apierror(f):
         raise
 
 
-def overwrite(filepage, revision, msg, msgprefix, res):
+def overwrite(filepage, msg, res, path):
     with tempfile.NamedTemporaryFile() as tmp:
-        urllib.urlretrieve(filepage.fileUrl(), tmp.name)
+        with open(path, 'rb') as old:
+            shutil.copyfileobj(old, tmp)
+
         tmp.truncate(res[0]['pos'])
         retry_apierror(
             lambda:
             filepage.upload(tmp.name,
-                            comment=msgprefix+msg,
+                            comment=MESSAGE_PREFIX+msg,
                             ignore_warnings=True)
         )
 
 
-def delete(filepage, revision, msg, msgprefix, res):
+def delete(filepage, msg):
     retry_apierror(
         lambda:
-        filepage.delete(msgprefix+msg, prompt=False)
+        filepage.delete(MESSAGE_PREFIX+msg, prompt=False)
     )
 
 
-def revdel(filepage, revision, msg, msgprefix, res):
+def revdel(filepage, revision, msg):
     assert filepage.get_file_history()[revision.timestamp]
 
     for i in range(8):
@@ -233,13 +235,13 @@ def revdel(filepage, revision, msg, msgprefix, res):
             target=filepage.title(),
             ids=revid,
             hide='content',
-            reason=msgprefix+msg,
+            reason=MESSAGE_PREFIX+msg,
             token=filepage.site.tokens['csrf']
         ).submit()
     )
 
 
-def add_speedy(filepage, revision, msg, msgprefix, res):
+def add_speedy(filepage, msg):
     # Make sure no edit conflicts happen here
     retry_apierror(
         lambda:
