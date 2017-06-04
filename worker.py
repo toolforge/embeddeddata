@@ -25,6 +25,7 @@ import urllib
 import uuid
 
 import pywikibot
+from pywikibot.data.api import APIError
 from redis import Redis
 
 from config import REDIS_KEY
@@ -42,7 +43,7 @@ def sizeof_fmt(num, suffix='B'):
 
 
 def throttle():
-    TIME = 8
+    TIME = 1
     pywikibot.output('Throttle {} seconds'.format(TIME))
     time.sleep(TIME)
 
@@ -199,7 +200,6 @@ def execute_file(filepage, revision, msg, msgprefix, res):
             delete(filepage, revision, msg, msgprefix, res)
         else:
             overwrite(filepage, revision, msg, msgprefix, res)
-            throttle()
             try:
                 revdel(filepage, revision, msg, msgprefix, res)
             except Exception:
@@ -210,42 +210,80 @@ def execute_file(filepage, revision, msg, msgprefix, res):
     add_speedy(filepage, revision, msg, msgprefix, res)
 
 
+def retry_apierror(f):
+    for i in range(8):
+        try:
+            f()
+        except APIError as e:
+            if e.code != 'internal_api_error_LocalFileLockError':
+                raise
+            pywikibot.warning(
+                'Failed API request on attempt %d' % i)
+        else:
+            break
+    else:
+        raise
+
+
 def overwrite(filepage, revision, msg, msgprefix, res):
     with tempfile.NamedTemporaryFile() as tmp:
         urllib.urlretrieve(filepage.fileUrl(), tmp.name)
         tmp.truncate(res[0]['pos'])
-        filepage.upload(tmp.name,
-                        comment=msgprefix+msg,
-                        ignore_warnings=True)
+        retry_apierror(
+            lambda:
+            filepage.upload(tmp.name,
+                            comment=msgprefix+msg,
+                            ignore_warnings=True)
+        )
 
 
 def delete(filepage, revision, msg, msgprefix, res):
-    filepage.delete(msgprefix+msg, prompt=False)
+    retry_apierror(
+        lambda:
+        filepage.delete(msgprefix+msg, prompt=False)
+    )
 
 
 def revdel(filepage, revision, msg, msgprefix, res):
     assert filepage.get_file_history()[revision.timestamp]
-    filepage._file_revisions.clear()
-    revision = filepage.get_file_history()[revision.timestamp]
-    assert revision.archivename and '!' in revision.archivename
+
+    for i in range(8):
+        try:
+            filepage._file_revisions.clear()
+            revision = filepage.get_file_history()[revision.timestamp]
+            assert revision.archivename and '!' in revision.archivename
+        except (KeyError, AssertionError):
+            pywikibot.warning(
+                'Failed to load new revision history on attempt %d' % i)
+            throttle()
+        else:
+            break
+    else:
+        raise
 
     revid = revision.archivename.split('!')[0]
-    filepage.site._simple_request(
-        action='revisiondelete',
-        type='oldimage',
-        target=filepage.title(),
-        ids=revid,
-        hide='content',
-        reason=msgprefix+msg,
-        token=filepage.site.tokens['csrf']
-    ).submit()
+    retry_apierror(
+        lambda:
+        filepage.site._simple_request(
+            action='revisiondelete',
+            type='oldimage',
+            target=filepage.title(),
+            ids=revid,
+            hide='content',
+            reason=msgprefix+msg,
+            token=filepage.site.tokens['csrf']
+        ).submit()
+    )
 
 
 def add_speedy(filepage, revision, msg, msgprefix, res):
     # Make sure no edit conflicts happen here
-    filepage.save(prependtext='{{embedded data|suspect=1|1=%s}}\n' % msg,
-                  summary='Bot: Adding {{[[Template:Embedded data|'
-                  'embedded data]]}} to this embedded data suspect.')
+    retry_apierror(
+        lambda:
+        filepage.save(prependtext='{{embedded data|suspect=1|1=%s}}\n' % msg,
+                      summary='Bot: Adding {{[[Template:Embedded data|'
+                      'embedded data]]}} to this embedded data suspect.')
+    )
 
 
 def main():
