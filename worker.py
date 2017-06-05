@@ -203,10 +203,20 @@ def overwrite(filepage, msg, res, path):
 
 
 def delete(filepage, msg):
-    retry_apierror(
-        lambda:
-        filepage.delete(MESSAGE_PREFIX+msg, prompt=False)
-    )
+    for i in range(8):
+        retry_apierror(
+            lambda:
+            filepage.delete(MESSAGE_PREFIX+msg, prompt=False)
+        )
+
+        del filepage._content
+        if not filepage.exists():
+            break
+        else:
+            pywikibot.warning(
+                'File still exist after deletion on attempt %d' % i)
+    else:
+        pywikibot.warning('FIXME: Deletion attempt exhausted')
 
 
 def revdel(filepage, revision, msg):
