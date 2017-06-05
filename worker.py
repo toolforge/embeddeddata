@@ -209,7 +209,7 @@ def delete(filepage, msg):
             filepage.delete(MESSAGE_PREFIX+msg, prompt=False)
         )
 
-        del filepage._content
+        filepage.clear_cache()
         if not filepage.exists():
             break
         else:
