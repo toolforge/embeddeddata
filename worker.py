@@ -159,7 +159,10 @@ def execute_file(filepage, revision, msg, res, path):
     if any([item['posexact'] and item['mime'][0] in ARCHIVE_TYPES
             for item in res]):
         if len(filepage.get_file_history()) == 1:
-            add_speedy(filepage, msg)
+            try:
+                add_speedy(filepage, msg)
+            except Exception:
+                pass
             delete(filepage, msg)
         else:
             overwrite(filepage, msg, res, path)
@@ -189,6 +192,12 @@ def retry_apierror(f):
 
 
 def overwrite(filepage, msg, res, path):
+    filepage._file_revisions.clear()
+
+    if not filepage.get_file_history():
+        pywikibot.warning("Page doesn't exist, skipping upload.")
+        return
+
     with tempfile.NamedTemporaryFile() as tmp:
         with open(path, 'rb') as old:
             shutil.copyfileobj(old, tmp)
@@ -204,17 +213,18 @@ def overwrite(filepage, msg, res, path):
 
 def delete(filepage, msg):
     for i in range(8):
-        retry_apierror(
-            lambda:
-            filepage.delete(MESSAGE_PREFIX+msg, prompt=False)
-        )
-
+        filepage._file_revisions.clear()
         filepage.clear_cache()
-        if not filepage.exists():
+        if not filepage.exists() and not filepage.get_file_history():
             break
         else:
-            pywikibot.warning(
-                'File still exist after deletion on attempt %d' % i)
+            if i:
+                pywikibot.warning(
+                    'File exist still before deletion on attempt %d' % i)
+            retry_apierror(
+                lambda:
+                filepage.delete(MESSAGE_PREFIX+msg, prompt=False)
+            )
     else:
         pywikibot.warning('FIXME: Deletion attempt exhausted')
 
@@ -252,6 +262,12 @@ def revdel(filepage, revision, msg):
 
 
 def add_speedy(filepage, msg):
+    filepage.clear_cache()
+
+    if not filepage.exists():
+        pywikibot.warning("Page doesn't exist, skipping save.")
+        return
+
     # Make sure no edit conflicts happen here
     retry_apierror(
         lambda:
