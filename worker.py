@@ -180,9 +180,7 @@ def retry_apierror(f):
     for i in range(8):
         try:
             f()
-        except APIError as e:
-            if e.code != 'internal_api_error_LocalFileLockError':
-                raise
+        except APIError:
             pywikibot.warning(
                 'Failed API request on attempt %d' % i)
         else:
