@@ -213,7 +213,13 @@ def delete(filepage, msg):
     for i in range(8):
         filepage._file_revisions.clear()
         filepage.clear_cache()
-        if not filepage.exists() and not filepage.get_file_history():
+
+        try:
+            hist = filepage.get_file_history()
+        except pywikibot.NoPage:
+            hist = None
+
+        if not filepage.exists() and not hist:
             break
         else:
             if i:
