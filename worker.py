@@ -219,7 +219,7 @@ def delete(filepage, msg):
 
         try:
             hist = filepage.get_file_history()
-        except pywikibot.NoPage:
+        except Exception:
             hist = None
 
         if not filepage.exists() and not hist:
@@ -229,6 +229,13 @@ def delete(filepage, msg):
                 pywikibot.warning(
                     'File exist still before deletion on attempt %d' % i)
             pywikibot.output('Executing delete on %s' % filepage)
+
+            # Multi-workers are enough to cause problems, no need for internal
+            # locking to cause even more problems
+            if filepage.title() in filepage.site._locked_pages:
+                filepage.site._locked_pages.remove(filepage.title())
+                pywikibot.warning('Forcefully unlocked page %s' % filepage)
+
             retry_apierror(
                 lambda:
                 filepage.delete(MESSAGE_PREFIX+msg, prompt=False)
