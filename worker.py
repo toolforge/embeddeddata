@@ -19,6 +19,7 @@ import json
 import os
 import shutil
 import tempfile
+import threading
 import traceback
 import uuid
 
@@ -164,6 +165,8 @@ def execute_file(filepage, revision, msg, res, path):
             except Exception:
                 pass
             delete(filepage, msg)
+            for i in range(8):
+                threading.Timer((i+1)*8, delete, (filepage, msg)).start()
         else:
             overwrite(filepage, msg, res, path)
             try:
