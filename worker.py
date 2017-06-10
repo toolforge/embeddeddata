@@ -52,6 +52,12 @@ def run_worker():
 
         site = pywikibot.Site(user="Embedded Data Bot")
         site._throttle = Throttle(site, multiplydelay=False)
+
+        # Multi-workers are enough to cause problems, no need for internal
+        # locking to cause even more problems
+        site.lock_page = lambda *args, **kwargs: None  # noop
+        site.unlock_page = lambda *args, **kwargs: None  # noop
+
         redis = Redis(host="tools-redis")
 
         while True:
@@ -229,12 +235,6 @@ def delete(filepage, msg):
                 pywikibot.warning(
                     'File exist still before deletion on attempt %d' % i)
             pywikibot.output('Executing delete on %s' % filepage)
-
-            # Multi-workers are enough to cause problems, no need for internal
-            # locking to cause even more problems
-            if filepage.title() in filepage.site._locked_pages:
-                filepage.site._locked_pages.remove(filepage.title())
-                pywikibot.warning('Forcefully unlocked page %s' % filepage)
 
             retry_apierror(
                 lambda:
