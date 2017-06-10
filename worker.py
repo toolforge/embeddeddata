@@ -228,7 +228,7 @@ def delete(filepage, msg):
             if i:
                 pywikibot.warning(
                     'File exist still before deletion on attempt %d' % i)
-            pywikibot.output('Executing delete on %s', filepage)
+            pywikibot.output('Executing delete on %s' % filepage)
             retry_apierror(
                 lambda:
                 filepage.delete(MESSAGE_PREFIX+msg, prompt=False)
