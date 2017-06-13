@@ -170,7 +170,9 @@ def execute_file(filepage, revision, msg, res, path):
                 add_speedy(filepage, msg)
             except Exception:
                 pass
+            protect(filepage, msg)
             delete(filepage, msg)
+            protect(filepage, msg)
             for i in range(8):
                 threading.Timer((i+1)*8, delete, (filepage, msg)).start()
         else:
@@ -242,6 +244,38 @@ def delete(filepage, msg):
             )
     else:
         pywikibot.warning('FIXME: Deletion attempt exhausted')
+
+
+def protect(filepage, msg):
+    # Make sure this is not executed on a page that is already protected.
+    # For newly uploaded files this is fine.
+    protectmsg = (
+        '[[Commons:Protection policy|Protection against re-creation]]: ' +
+        MESSAGE_PREFIX + msg)
+    ev = threading.Event()
+
+    def _protect(typ):
+        try:
+            filepage.protect(
+                protections={typ: 'autoconfirmed'},
+                expiry='1 minute',
+                reason=protectmsg,
+                prompt=False
+            )
+        except (APIError, pywikibot.Error):
+            pass
+        else:
+            ev.set()
+
+    upload_thread = threading.Thread(target=lambda: _protect('upload'))
+    create_thread = threading.Thread(target=lambda: _protect('create'))
+    upload_thread.start()
+    create_thread.start()
+    upload_thread.join()
+    create_thread.join()
+
+    if not ev.is_set():
+        pywikibot.warning('Protection of %s failed.' % filepage)
 
 
 def revdel(filepage, revision, msg):
