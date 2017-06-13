@@ -15,6 +15,7 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+import datetime
 import json
 import os
 import shutil
@@ -165,11 +166,8 @@ def execute_file(filepage, revision, msg, res, path):
 
     if any([item['posexact'] and item['mime'][0] in ARCHIVE_TYPES
             for item in res]):
-        if len(filepage.get_file_history()) == 1:
-            try:
-                add_speedy(filepage, msg)
-            except Exception:
-                pass
+        if len(filepage.get_file_history()) == 1 or \
+                csd_g7_eligible(filepage, revision):
             protect(filepage, msg)
             delete(filepage, msg)
             protect(filepage, msg)
@@ -185,6 +183,45 @@ def execute_file(filepage, revision, msg, res, path):
         return
 
     add_speedy(filepage, msg)
+
+
+def csd_g7_eligible(filepage, revision):
+    # https://commons.wikimedia.org/w/index.php?title=Commons:Criteria_for_speedy_deletion&oldid=244664065#G7
+    # == General reasons ==
+    # 7. Author or uploader request deletion
+    # Original author or uploader requests deletion of recently created
+    # (<7 days) unused content. For author/uploader requests for deletion of
+    # content that is older a deletion request should be filled instead.
+
+    # condition: recently created
+    if (pywikibot.Timestamp.now() - filepage.oldest_file_info.timestamp
+            >= datetime.timedelta(days=7)):
+        return False
+
+    # condition: author request
+    assert_username = [revision.user, filepage.site.username()]
+    for rev in filepage.get_file_history():
+        if rev.user not in assert_username:
+            return False
+
+    # condition: unused
+    req = filepage.site._simple_request(
+        action='query',
+        prop='globalusage',
+        titles=filepage.title()
+    )
+    try:
+        res = req.submit()
+    except Exception as e:
+        pywikibot.exception(e)
+        return False
+    else:
+        p = res['query']['pages']
+        gu = p[p.keys()[0]]['globalusage']
+        if gu:
+            return False
+
+    return True
 
 
 def retry_apierror(f):
