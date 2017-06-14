@@ -200,7 +200,7 @@ def csd_g7_eligible(filepage, revision):
 
     # condition: author request
     assert_username = [revision.user, filepage.site.username()]
-    for rev in filepage.get_file_history():
+    for rev in filepage.get_file_history().values():
         if rev.user not in assert_username:
             return False
 
