@@ -133,12 +133,15 @@ def run_worker():
                 if res:
                     msg = []
                     for item in res:
-                        pos = '%s (%s bytes, via %s)' % (
-                            sizeof_fmt(item['pos']),
-                            item['pos'],
-                            ','.join(item['via']))
-                        if not item['posexact']:
-                            pos = 'about ' + pos
+                        if item['middleware']:
+                            pos = item['middleware']
+                        else:
+                            pos = '%s (%s bytes, via %s)' % (
+                                sizeof_fmt(item['pos']),
+                                item['pos'],
+                                ','.join(item['via']))
+                            if not item['posexact']:
+                                pos = 'about ' + pos
 
                         if item['mime'][0] in UNKNOWN_TYPES:
                             mime = 'Unidentified type (%s, %s)' % item['mime']
@@ -165,7 +168,8 @@ def run_worker():
 
 def execute_file(filepage, revision, msg, res, path):
     if all([item['posexact'] and
-            item['mime'][0] == filepage.latest_file_info.mime
+            item['mime'][0] == filepage.latest_file_info.mime and
+            not item['middleware']
             for item in res]):
         overwrite(filepage, msg, res, path)
         return

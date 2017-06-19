@@ -21,13 +21,15 @@ import collections
 
 from detection.by_ending import detect as ending_detect
 from detection.by_magic import detect as magic_detect
+from detection.middleware import detect as middleware_detect
 
 
 def detect(f):
     ret = collections.defaultdict(lambda: {
         'posexact': False,
         'via': [],
-        'mime': ('?/?', '?')
+        'mime': ('?/?', '?'),
+        'middleware': None
     })
     for item in ending_detect(f) or []:
         ret[item['pos']]['pos'] = item['pos']
@@ -39,5 +41,16 @@ def detect(f):
         ret[item['pos']]['posexact'] = True
         ret[item['pos']]['via'].append('Magic')
         ret[item['pos']]['mime'] = item['mime']
-    return collections.OrderedDict(
+    ret = collections.OrderedDict(
         sorted(ret.items(), key=lambda (k, v): k)).values()
+
+    for item in middleware_detect(f) or []:
+        ret.append({
+            'pos': item['pos'],
+            'posexact': False,
+            'via': item.get('via', []),
+            'mime': item.get('mime', ('?/?', '?')),
+            'middleware': item['middleware']
+        })
+
+    return ret
