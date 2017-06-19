@@ -88,14 +88,20 @@ def run_worker():
                         change['log_params']['img_timestamp'])]
             except KeyError:
                 try:
+                    # From rcbacklog
                     revision = filepage.get_file_history()[
-                        pywikibot.Timestamp.fromtimestamp(
-                            change['timestamp'])]
+                        pywikibot.Timestamp.fromISOformat(
+                            change['params']['img_timestamp'])]
                 except KeyError:
-                    revision = filepage.latest_file_info
-                    pywikibot.warning(
-                        'Cannot fetch specified revision, falling back to '
-                        'latest revision.')
+                    try:
+                        revision = filepage.get_file_history()[
+                            pywikibot.Timestamp.fromtimestamp(
+                                change['timestamp'])]
+                    except KeyError:
+                        revision = filepage.latest_file_info
+                        pywikibot.warning(
+                            'Cannot fetch specified revision, falling back to '
+                            'latest revision.')
 
             if pywikibot.User(site, revision.user).editCount(
                     force=True) > 200:
