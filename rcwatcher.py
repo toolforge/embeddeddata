@@ -21,7 +21,7 @@ import signal
 from redis import Redis
 
 import pywikibot
-from pywikibot.comms.rcstream import site_rc_listener
+from pywikibot.comms.eventstreams import site_rc_listener
 
 from config import REDIS_KEY
 
@@ -47,11 +47,11 @@ def run_watcher():
     for change in rc:
         signal.alarm(TIMEOUT)
 
-        # Uploads from non-bots
-        if not change['bot'] and \
-                change['namespace'] == 6 and \
-                change['type'] == 'log' and \
-                change['log_type'] == 'upload':
+        if (
+            change['type'] == 'log' and
+            change['namespace'] == 6 and
+            change['log_type'] == 'upload'
+        ):
             redis.rpush(REDIS_KEY, json.dumps(change))
 
     pywikibot.output("Exit - THIS SHOULD NOT HAPPEN")
@@ -60,6 +60,7 @@ def run_watcher():
 def main():
     pywikibot.handleArgs()
     run_watcher()
+
 
 if __name__ == "__main__":
     try:
