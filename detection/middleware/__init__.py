@@ -17,6 +17,8 @@
 
 from __future__ import absolute_import
 
+import traceback
+
 from detection.utils import filetype
 
 middlewares = {}
@@ -36,9 +38,12 @@ def detect(f):
 
     for middleware, accepts in middlewares.items():
         if accepts(major, minor):
-            for item in middleware(f) or []:
-                item['middleware'] = middleware.middleware_name
-                ret.append(item)
+            try:
+                for item in middleware(f) or []:
+                    item['middleware'] = middleware.middleware_name
+                    ret.append(item)
+            except Exception:
+                traceback.print_exc()
 
     return ret
 

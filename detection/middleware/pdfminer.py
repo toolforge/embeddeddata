@@ -51,7 +51,11 @@ def pdfminer_EmbeddedFile(f):
         for xref in doc.xrefs:
             ids.update(xref.get_objids())
         for obj_id in ids:
-            obj = doc.getobj(obj_id)
+            try:
+                obj = doc.getobj(obj_id)
+            except Exception:
+                traceback.print_exc()
+                continue
             if isinstance(obj, PDFStream) and \
                     obj.get('Type') is LITERAL_EMBEDDEDFILE:
                 try:
