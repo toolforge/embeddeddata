@@ -56,8 +56,12 @@ def pdfminer_EmbeddedFile(f):
             except Exception:
                 traceback.print_exc()
                 continue
-            if isinstance(obj, PDFStream) and \
-                    obj.get('Type') is LITERAL_EMBEDDEDFILE:
+            if (
+                isinstance(obj, PDFStream) and (
+                    obj.get('Type') is LITERAL_EMBEDDEDFILE or
+                    'Params' in obj
+                )
+            ):
                 try:
                     data = obj.get_data()
                 except Exception:
