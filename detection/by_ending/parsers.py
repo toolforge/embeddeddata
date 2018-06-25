@@ -61,7 +61,7 @@ class ParserDetector(object):
                     self.parse_djvu(f)
                 elif parsetype == 'webp':
                     self.parse_webp(f)
-                elif parsetype in ['x-xcf', 'xcf']:
+                elif parsetype == 'xcf':
                     self.parse_xcf(f)
                 elif parsetype == 'tiff':
                     self.parse_tiff(f)

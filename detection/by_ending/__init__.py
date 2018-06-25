@@ -30,12 +30,16 @@ from detection.by_ending.marker import find_marker, seek_trailers
 from detection.by_ending.parsers import ParserDetector
 
 UNKNOWN_TYPES = ['application/octet-stream', 'text/plain']
-ARCHIVE_TYPES = ['application/x-rar',
+ARCHIVE_TYPES = ['application/rar',
                  'application/zip',
-                 'application/x-7z-compressed',
-                 'application/x-freearc',
-                 'application/vnd.ms-cab-compressed',
-                 'application/x-dosexec',  # self-extracting archives
+                 'application/7z', 'application/7z-compressed',
+                 'application/tar',
+                 'application/gzip',
+                 'application/gtar', 'application/gtar-compressed',
+                 'application/freearc',
+                 'application/cab', 'application/vnd.ms-cab-compressed',
+                 # self-extracting archives
+                 'application/dosexec', 'application/msdos-program'
                  ]
 
 
@@ -52,20 +56,20 @@ def detect(f):
         'gif'
     ]:
         detector = pillow_detector
-    elif minor in ['x-flac', 'flac']:
+    elif minor == 'flac':
         detector = ffmpeg_detector
     elif minor in [
         'ogg',
         'webm',
         'vnd.djvu', 'djvu',
         'webp',
-        'x-xcf', 'xcf',
+        'xcf',
         'tiff',
         'png',
         'midi', 'mid',
     ]:
         detector = lambda f: ParserDetector(f).parse(minor)
-    elif minor in ['x-wav', 'wav']:
+    elif minor == 'wav':
         detector = wave_detector
     elif minor == 'pdf':
         # ISO 32000-1:2008

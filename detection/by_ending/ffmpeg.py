@@ -37,8 +37,6 @@ def remux_detect(f):
     else:
         # naive get extension from mime
         ext = mime.split('/')[1]
-        if ext[:2] == 'x-':
-            ext = ext[2:]
     with tempfile.NamedTemporaryFile(suffix='.'+ext) as tmp:
         args = ['ffmpeg',
                 '-loglevel', 'warning',

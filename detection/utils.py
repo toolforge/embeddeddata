@@ -25,7 +25,11 @@ def filetype(path, mime=True):
         # not '-i' because we don't need '; charset=binary'
         args.append('--mime-type')
 
-    return subprocess.check_output(args).strip()
+    val = subprocess.check_output(args).strip()
+
+    if mime:
+        val = val.replace('/x-', '/')
+    return val
 
 
 class FileProxy(object):
