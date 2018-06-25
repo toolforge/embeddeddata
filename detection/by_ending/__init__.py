@@ -34,7 +34,9 @@ ARCHIVE_TYPES = ['application/x-rar',
                  'application/zip',
                  'application/x-7z-compressed',
                  'application/x-freearc',
-                 'application/vnd.ms-cab-compressed']
+                 'application/vnd.ms-cab-compressed',
+                 'application/x-dosexec',  # self-extracting archives
+                 ]
 
 
 def detect(f):
