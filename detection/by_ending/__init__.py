@@ -22,12 +22,13 @@ import tempfile
 
 import pywikibot
 
-from detection.utils import filetype
 from detection.by_ending.ffmpeg import strace_detect as ffmpeg_detector
-from detection.by_ending.pillow import detect as pillow_detector
-from detection.by_ending.wave import detect as wave_detector
 from detection.by_ending.marker import find_marker, seek_trailers
 from detection.by_ending.parsers import ParserDetector
+from detection.by_ending.pefile import detect as pefile_detect
+from detection.by_ending.pillow import detect as pillow_detector
+from detection.by_ending.wave import detect as wave_detector
+from detection.utils import filetype
 
 UNKNOWN_TYPES = ['application/octet-stream', 'text/plain']
 ARCHIVE_TYPES = ['application/rar',
@@ -85,6 +86,9 @@ def detect(f):
             '</svg>', '</svg>\n', '</svg>\r\n', '</svg>\r',
             '</SVG>', '</SVG>\n', '</SVG>\r\n', '</SVG>\r',
         ])
+    # PE format. Not executable, but because of the abundance of SFX...
+    elif minor in ['dosexec', 'msdos-program']:
+        detector = pefile_detect
     elif minor in [typ.split('/')[1] for typ in ARCHIVE_TYPES]:
         # Recursed archival formats
         return
