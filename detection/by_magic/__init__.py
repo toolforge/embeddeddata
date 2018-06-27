@@ -144,5 +144,5 @@ def detect(f):
         return ret
 
 
-for lib in ['cab', 'rar']:
+for lib in ['cab', 'rar', '7z']:
     __import__('detection.by_magic.' + lib)
