@@ -21,10 +21,6 @@ import itertools
 import os
 import traceback
 
-from pywikibot import warning
-
-from detection.by_ending.marker import seek_trailers
-from detection.by_ending.pillow import detect as pillow_detector
 from detection.by_magic import find_startpos
 from detection.middleware import register_detector
 
@@ -40,15 +36,6 @@ retdct = {
 @register_detector('Anti_FFC',
                    lambda major, minor: True)
 def anti_ffc(f):
-    try:
-        pos, _ = pillow_detector(f)
-    except Exception:
-        traceback.print_exc()
-    else:
-        pos = seek_trailers(f, pos, [b'\xff\xd9'])
-        if try_pos(f, pos-4):
-            return [retdct.copy()]
-
     with open(f, 'rb') as fp:
         for pos in list(find_startpos(fp, b'\xff\xd9\xff\xd9')):
             if try_pos(f, pos):
