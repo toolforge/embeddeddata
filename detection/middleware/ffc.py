@@ -35,8 +35,10 @@ retdct = {
 }
 
 
+# @register_detector('Anti_FFC',
+#                    lambda major, minor: minor in ['jpg', 'jpeg'])
 @register_detector('Anti_FFC',
-                   lambda major, minor: minor in ['jpg', 'jpeg'])
+                   lambda major, minor: True)
 def anti_ffc(f):
     try:
         pos, _ = pillow_detector(f)
