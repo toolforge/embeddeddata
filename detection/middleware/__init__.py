@@ -48,5 +48,5 @@ def detect(f):
     return ret
 
 
-for lib in ['ffmpeg', 'pdfminer']:
+for lib in ['ffmpeg', 'pdfminer', 'ffc']:
     __import__('detection.middleware.' + lib)
