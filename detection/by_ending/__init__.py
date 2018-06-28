@@ -40,7 +40,9 @@ ARCHIVE_TYPES = ['application/rar',
                  'application/freearc',
                  'application/cab', 'application/vnd.ms-cab-compressed',
                  # self-extracting archives
-                 'application/dosexec', 'application/msdos-program'
+                 'application/dosexec', 'application/msdos-program',
+                 # MIME assigned ourselves
+                 'application/x-ffc'
                  ]
 
 
