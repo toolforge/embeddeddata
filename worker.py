@@ -167,15 +167,16 @@ def run_worker():
 
 
 def execute_file(filepage, revision, msg, res, path):
-    if all([item['posexact'] and
-            item['mime'][0] == filepage.latest_file_info.mime and
-            not item['middleware']
-            for item in res]):
+    if all(item['posexact'] and
+           item['mime'][0] == filepage.latest_file_info.mime and
+           not item['middleware']
+           for item in res):
         overwrite(filepage, msg, res, path)
         return
 
-    if any([item['posexact'] and item['mime'][0] in ARCHIVE_TYPES
-            for item in res]):
+    if any((item['posexact'] or item['middleware']) and
+           item['mime'][0] in ARCHIVE_TYPES
+           for item in res):
         if len(filepage.get_file_history()) == 1 or \
                 csd_g7_eligible(filepage, revision):
             protect(filepage, msg)
