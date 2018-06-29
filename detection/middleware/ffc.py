@@ -62,7 +62,7 @@ def try_pos(f, pos):
         except Exception:
             traceback.print_exc()
             return
-        if len(header) % 16 != 0:
+        if len(header) % 16 != 0 or len(header) <= 16:
             return
 
         nl = fp.read(2)
@@ -77,7 +77,7 @@ def try_pos(f, pos):
             if not is_base64(fp):
                 break
 
-        return i > 16
+        return i > 64
 
 
 valid_base64set = set(map(chr, sum([
